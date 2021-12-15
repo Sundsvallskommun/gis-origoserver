@@ -1,0 +1,157 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-4">
+      <div class="page-header">
+        <h1>{{{referens.beteckning}}}</h1>
+      </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Lagfaren ägare</h3>
+          </div>
+            <table class="table">
+              <tbody>
+                {{#each lagfart}}
+                  <tr>
+                    <td>
+                      <address>
+                        <strong>{{agare.namn}}</strong><br>
+                        {{#each agare.adress}}
+                          {{#if utdelningsadress}}
+                            {{utdelningsadress}}<br>
+                          {{/if}}
+                          {{#if coAdress}}
+                            c/o: {{coAdress}}<br>
+                          {{/if}}
+                          {{#if postadress}}
+                            {{postadress}}<br>
+                          {{/if}}
+                          {{#if land}}
+                            {{land}}<br>
+                          {{/if}}
+                        {{/each}}
+                        </address>
+                        {{#if idnummer}}
+                          Idnummer: {{idnummer}}<br>
+                        {{/if}}
+                        {{#if beviljadAndel}}
+                          Andel: {{beviljadAndel}}<br>
+                        {{/if}}
+                        {{#if inskrivningsdag}}
+                          Inskrivningsdag: {{inskrivningsdag}}<br>
+                        {{/if}}
+                        {{#if dagboksnummer}}
+                          Dagboksnummer: {{dagboksnummer}}<br>
+                        {{/if}}
+                        {{#if beslut}}
+                          Beslut: {{beslut}}<br>
+                        {{/if}}
+                    </td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+        </div>
+        {{#if tomtratt}}
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Tomträttshavare</h3>
+            </div>
+              <table class="table">
+                <tbody>
+                    {{#each tomtratt}}
+                      <tr>
+                        <td>
+                          <address>
+                            <strong>{{agare.namn}}</strong><br>
+                            {{#each agare.adress}}
+                              {{#if utdelningsadress}}
+                                {{utdelningsadress}}<br>
+                              {{/if}}
+                              {{#if coAdress}}
+                                c/o: {{coAdress}}<br>
+                              {{/if}}
+                              {{#if postadress}}
+                                {{postadress}}<br>
+                              {{/if}}
+                              {{#if land}}
+                                {{land}}<br>
+                              {{/if}}
+                            {{/each}}
+                            </address>
+                            {{#if idnummer}}
+                              Idnummer: {{idnummer}}<br>
+                            {{/if}}
+                            {{#if beviljadAndel}}
+                              Andel: {{beviljadAndel}}<br>
+                            {{/if}}
+                            {{#if inskrivningsdag}}
+                              Inskrivningsdag: {{inskrivningsdag}}<br>
+                            {{/if}}
+                            {{#if dagboksnummer}}
+                              Dagboksnummer: {{dagboksnummer}}<br>
+                            {{/if}}
+                            {{#if beslut}}
+                              Beslut: {{beslut}}<br>
+                            {{/if}}
+                        </td>
+                      </tr>
+                    {{/each}}
+                </tbody>
+              </table>
+          </div>
+        {{/if}}
+        {{#if tidigareAgande}}
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Tidigare ägande</h3>
+            </div>
+              <table class="table">
+                <tbody>
+                    {{#each tidigareAgande}}
+                      <tr>
+                        <td>
+                          <address>
+                            <strong>{{agare.namn}}</strong><br>
+                            {{#each agare.adress}}
+                              {{#if utdelningsadress}}
+                                {{utdelningsadress}}<br>
+                              {{/if}}
+                              {{#if coAdress}}
+                                c/o: {{coAdress}}<br>
+                              {{/if}}
+                              {{#if postadress}}
+                                {{postadress}}<br>
+                              {{/if}}
+                              {{#if land}}
+                                {{land}}<br>
+                              {{/if}}
+                            {{/each}}
+                            </address>
+                            {{#if idnummer}}
+                              Idnummer: {{idnummer}}<br>
+                            {{/if}}
+                            {{#if beviljadAndel}}
+                              Andel: {{beviljadAndel}}<br>
+                            {{/if}}
+                            {{#if inskrivningsdag}}
+                              Inskrivningsdag: {{inskrivningsdag}}<br>
+                            {{/if}}
+                            {{#if dagboksnummer}}
+                              Dagboksnummer: {{dagboksnummer}}<br>
+                            {{/if}}
+                            {{#if beslut}}
+                              Beslut: {{beslut}}<br>
+                            {{/if}}
+                            {{#if typ}}
+                             Typ: {{typ}}<br>
+                            {{/if}}
+                        </td>
+                      </tr>
+                    {{/each}}
+                </tbody>
+              </table>
+          </div>
+        {{/if}}
+    </div>
+  </div>
+</div>

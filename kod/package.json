@@ -1,0 +1,53 @@
+{
+  "name": "origo-server",
+  "version": "1.0.0",
+  "description": "Origo serverside to be used with an Origo map client",
+  "keywords": [
+    "origo",
+    "server"
+  ],
+  "license": "BSD-2-Clause",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "bluebird": "^3.7.2",
+    "body-parser": "^1.19.0",
+    "cookie-parser": "~1.3.3",
+    "cors": "^2.8.5",
+    "debug": "^4.3.1",
+    "exceljs": "^4.2.1",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "express-handlebars": "^5.3.2",
+    "express-openapi": "^7.5.0",
+    "http-proxy": "^1.18.1",
+    "iconv-lite": "^0.6.2",
+    "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
+    "node-gyp": "^7.1.2",
+    "npm": "^6.14.13",
+    "orm": "^5.0.7",
+    "proj4": "^2.7.2",
+    "query-overpass": "^1.5.5",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6",
+    "saml2-js": "^3.0.1",
+    "serve-favicon": "^2.5.0",
+    "soap": "^0.36.0",
+    "sqlite3": "^5.0.2",
+    "utf8": "^3.0.0",
+    "wkt": "^0.1.1",
+    "xml2js": "^0.4.23",
+    "xmlbuilder": "^15.1.1"
+  },
+  "optionalDependencies": {
+    "mssql": "^3.3.0",
+    "node-windows": "^0.1.14",
+    "oracledb": "^3.1.2",
+    "pg": "^6.4.2",
+    "pg-promise": "^5.3.5"
+  }
+}
