@@ -37,7 +37,7 @@ var getInskrivning = async (req, res) => {
       }
     } else {
       res.render('inskrivningerror', {
-        fid: objektid
+        fid: 'No objektid!'
       });
     }
   } else {
