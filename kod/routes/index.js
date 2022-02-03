@@ -24,6 +24,7 @@ var convertToGeojson = require('../handlers/converttogeojson');
 var oauth2proxy = require('../handlers/oauth2proxy');
 var apiContract = require('../handlers/apiContract');
 var lmBuilding = require('../handlers/lmbuilding');
+var iotTemp = require('../handlers/iottemp');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -54,5 +55,6 @@ router.all('/converttogeojson/*', convertToGeojson);
 router.all('/oauth2proxy/*', oauth2proxy);
 router.all('/apicontract/getcontract/*', apiContract['getContract']);
 router.all('/apicontract/getallcontracts/*', apiContract['getAllContracts']);
+router.all('/iottemp', iotTemp);
 
 module.exports = router;
