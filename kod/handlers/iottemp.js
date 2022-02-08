@@ -1,5 +1,8 @@
 const conf = require('../conf/config');
 const axios = require('axios').default;
+const co = require('co');
+const generate = require('node-chartist');
+const url = require('url');
 
 var proxyUrl = 'iotTemp';
 
@@ -33,14 +36,58 @@ async function getTemps(sensors, url, apikey) {
 
   await axios
     .all(axiosArray)
-    .then(console.log(temperatures))
+    .then(console.log('Get all temperatures from sensors!'))
     .catch(error => console.log('error', error));
 
   return temperatures;
 }
 
+async function getTemp(sensorId, url, apikey) {
+  let temperature = [];
+
+  await axios.get(url, { params: {sensor: sensorId, apikey: apikey} })
+            .then(response => { temperature = response.data.sensors[0] });
+
+  return temperature;
+}
+
+async function createChart(sensorData) {
+  const options = {
+    width: 1200,
+    height: 200,
+    axisX: { title: 'Tid' },
+    axisY: { title: 'Temp' }
+  };
+  const returnPromises = [];
+  const labels = [];
+  const values = [];
+
+  sensorData.values.forEach((value) => {
+    let hourMinutes = '';
+    if (!Number.isNaN(Date.parse(value.when))) {
+      hourMinutes = new Intl.DateTimeFormat('locale', { hour: 'numeric', minute: 'numeric' }).format(Date.parse(value.when));
+    }
+    if (hourMinutes.endsWith(':00')) {
+      labels.push(hourMinutes);
+    } else {
+      labels.push('');
+    }
+    values.push(value.value);
+  });
+  const line = generate('line', options, {
+    labels: labels,
+    series: [
+      {name: sensorData.id, value: values}
+    ]
+  });
+  returnPromises.push(line);
+
+  return returnPromises;
+}
+
 // Do the request in proper order
 const iotTemp = async (req, res) => {
+  let chartsArr = [];
 
   if (conf[proxyUrl]) {
     configOptions = Object.assign({}, conf[proxyUrl]);
@@ -48,11 +95,28 @@ const iotTemp = async (req, res) => {
     url_temp_sensor = configOptions.url_temp_sensor;
     apikey = configOptions.apikey;
 
-    const sensors = await getTempSensors(url_sensors, apikey);
-    //console.log(sensors);
-    const temperatures = await getTemps(sensors, url_temp_sensor, apikey);
-    //console.log(temperatures);
-    res.send(createGeojson(sensors, temperatures, configOptions));
+    const parsedUrl = url.parse(decodeURI(req.url), true);
+    if ('id' in parsedUrl.query) {
+      id = parsedUrl.query.id;
+      const temperature = await getTemp(id, url_temp_sensor, apikey);
+      // Create line chart of temperature the last 24 hours for sensor
+      const charts = await createChart(temperature);
+      Promise.all(charts).then(function(values) {
+        // Make a Geojson for the sensors and add temperatures and charts
+        res.send(createHtml(id, temperature, values, configOptions));
+      });
+    } else {
+      // Get all sensors from api.sundsvall.se
+      const sensors = await getTempSensors(url_sensors, apikey);
+      // Get the temperatures from the sensors from api.sundsvall.se
+      const temperatures = await getTemps(sensors, url_temp_sensor, apikey);
+      // Create line chart of temperatures the last 24 hours
+      const charts = await createCharts(temperatures);
+      Promise.all(charts).then(function(values) {
+        // Make a Geojson for the sensors and add temperatures and charts
+        res.send(createGeojson(sensors, temperatures, values, configOptions));
+      });
+    }
   } else {
     res.send({});
   }
@@ -61,7 +125,44 @@ const iotTemp = async (req, res) => {
 // Export the module
 module.exports = iotTemp;
 
-function createGeojson(sensors, temperatures, configOptions) {
+async function createCharts(temperatures) {
+  const options = {
+    width: 1200,
+    height: 200,
+    axisX: { title: 'Tid' },
+    axisY: { title: 'Temp' }
+  };
+  const returnPromises = [];
+
+  temperatures.forEach((temperature) => {
+    const labels = [];
+    const values = [];
+
+    temperature.values.forEach((value) => {
+      let hourMinutes = '';
+      if (!Number.isNaN(Date.parse(value.when))) {
+        hourMinutes = new Intl.DateTimeFormat('locale', { hour: 'numeric', minute: 'numeric' }).format(Date.parse(value.when));
+      }
+      if (hourMinutes.endsWith(':00')) {
+        labels.push(hourMinutes);
+      } else {
+        labels.push('');
+      }
+      values.push(value.value);
+    });
+    const line = generate('line', options, {
+      labels: labels,
+      series: [
+        {name: temperature.id, value: values}
+      ]
+    });
+    returnPromises.push(line);
+  });
+
+  return returnPromises;
+}
+
+function createGeojson(sensors, temperatures, charts, configOptions) {
   const result = {};
   let features = [];
   result['type'] = 'FeatureCollection';
@@ -83,9 +184,10 @@ function createGeojson(sensors, temperatures, configOptions) {
       hasGeometry = false;
     }
 
-    temperatures.forEach((temperature) => {
+    temperatures.forEach((temperature, i) => {
+      //console.log(i);
       if (sensor.id === temperature.id) {
-        tempSensor['properties'] = { latest: temperature.values[temperature.values.length - 1], values: temperature.values };
+        tempSensor['properties'] = { latest: temperature.values[temperature.values.length - 1], values: temperature.values, chart: charts[i], url:  `${configOptions.url_detail_page}${sensor.id}` };
       }
     });
     // Only add those with a geometry
@@ -95,4 +197,21 @@ function createGeojson(sensors, temperatures, configOptions) {
   });
   result['features'] = features;
   return result;
+}
+
+function createHtml(sensorId, temperature, chart, configOptions) {
+  const html = `<!DOCTYPE html>
+<html lang="sv">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1">
+	<title>Temperatur de senaste 24 timmr</title>
+	<link href="https://karta.sundsvall.se/css/chartist.css" rel="stylesheet">
+</head>
+<body>${chart}
+</body>
+</html>`;
+
+  return html;
 }
