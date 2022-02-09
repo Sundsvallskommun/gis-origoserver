@@ -25,6 +25,7 @@ var oauth2proxy = require('../handlers/oauth2proxy');
 var apiContract = require('../handlers/apiContract');
 var lmBuilding = require('../handlers/lmbuilding');
 var iotTemp = require('../handlers/iottemp');
+var befStat = require('../handlers/befstat');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -56,5 +57,6 @@ router.all('/oauth2proxy/*', oauth2proxy);
 router.all('/apicontract/getcontract/*', apiContract['getContract']);
 router.all('/apicontract/getallcontracts/*', apiContract['getAllContracts']);
 router.all('/iottemp', iotTemp);
+router.all('/befstat', befStat);
 
 module.exports = router;
