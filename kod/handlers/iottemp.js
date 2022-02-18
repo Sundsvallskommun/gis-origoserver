@@ -62,12 +62,13 @@ async function createChart(sensorData) {
   const labels = [];
   const values = [];
 
-  sensorData.values.forEach((value) => {
+  sensorData.values.forEach((value, i) => {
     let hourMinutes = '';
     if (!Number.isNaN(Date.parse(value.when))) {
       hourMinutes = new Intl.DateTimeFormat('locale', { hour: 'numeric', minute: 'numeric' }).format(Date.parse(value.when));
     }
-    if (hourMinutes.endsWith(':00')) {
+    // Add labels for every fifth value so that the labels don't cover each other
+    if (i % 4 == 0) {
       labels.push(hourMinutes);
     } else {
       labels.push('');
@@ -98,12 +99,14 @@ const iotTemp = async (req, res) => {
     const parsedUrl = url.parse(decodeURI(req.url), true);
     if ('id' in parsedUrl.query) {
       id = parsedUrl.query.id;
+      // Get all sensors from api.sundsvall.se
+      const sensors = await getTempSensors(url_sensors, apikey);
       const temperature = await getTemp(id, url_temp_sensor, apikey);
       // Create line chart of temperature the last 24 hours for sensor
       const charts = await createChart(temperature);
       Promise.all(charts).then(function(values) {
         // Make a Geojson for the sensors and add temperatures and charts
-        res.send(createHtml(id, temperature, values, configOptions));
+        res.send(createHtml(id, sensors, temperature, values, configOptions));
       });
     } else {
       // Get all sensors from api.sundsvall.se
@@ -138,12 +141,14 @@ async function createCharts(temperatures) {
     const labels = [];
     const values = [];
 
-    temperature.values.forEach((value) => {
+    temperature.values.forEach((value, i) => {
       let hourMinutes = '';
+      let lastLabel = '';
       if (!Number.isNaN(Date.parse(value.when))) {
         hourMinutes = new Intl.DateTimeFormat('locale', { hour: 'numeric', minute: 'numeric' }).format(Date.parse(value.when));
       }
-      if (hourMinutes.endsWith(':00')) {
+      // Add labels for every fifth value so that the labels don't cover each other
+      if (i % 4 == 0) {
         labels.push(hourMinutes);
       } else {
         labels.push('');
@@ -199,7 +204,19 @@ function createGeojson(sensors, temperatures, charts, configOptions) {
   return result;
 }
 
-function createHtml(sensorId, temperature, chart, configOptions) {
+function createHtml(sensorId, sensors, temperature, chart, configOptions) {
+  const firstTime = new Intl.DateTimeFormat('locale', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).format(Date.parse(temperature.values[0].when));
+  const lastTime = new Intl.DateTimeFormat('locale', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).format(Date.parse(temperature.values[temperature.values.length - 1].when));
+  let coordinates = [];
+  const lastTemp = temperature.values[temperature.values.length - 1].value;
+  sensors.forEach((sensor) => {
+    if (sensor.id === sensorId) {
+      if (typeof sensor.geometry !== 'undefined' && sensor.geometry !== null) {
+          coordinates = sensor.geometry.coordinates;
+      }
+    }
+  });
+
   const html = `<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -208,8 +225,29 @@ function createHtml(sensorId, temperature, chart, configOptions) {
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1">
 	<title>Temperatur de senaste 24 timmr</title>
 	<link href="https://karta.sundsvall.se/css/chartist.css" rel="stylesheet">
+<style>
+iframe {
+  width: 1200px;
+  height: 800px;
+  border: 0;
+  z-index: 9990;
+	text-align:center;
+}
+</style>
+
 </head>
-<body>${chart}
+<body>
+<h1>Temperatur mellan ${firstTime} och ${lastTime}</h1>
+${chart}
+<script>
+  function onMapFrameLoad() {
+    setTimeout(function(){ map.origo.api().addMarker(map.origo.api().getMapUtils().transformCoordinate([${coordinates}],'EPSG:4326','${configOptions.destEPSGCode}'),'${sensorId}','${lastTemp} &deg; C vid ${lastTime}'); }, 1000);
+	};
+</script>
+<iframe id="map" name="map" class="map-container" onload="onMapFrameLoad(this)"></iframe>
+<script>
+  map.location.href = '${configOptions.url_detail_map}';
+</script>
 </body>
 </html>`;
 
