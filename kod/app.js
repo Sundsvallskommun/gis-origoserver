@@ -14,12 +14,39 @@ var authSamlRouter = require('./handlers/authsaml');
 
 var app = express();
 
+if (conf['cors']) {
+  var configOptions = Object.assign({}, conf['cors']);
+  var corsOptions = {};
+  // Configures the Access-Control-Allow-Origin CORS header.
+  if ('origin' in configOptions) {
+    corsOptions['origin'] = configOptions.origin;
+  }
+  // Configures the Access-Control-Allow-Methods CORS header.
+  if ('methods' in configOptions) {
+    corsOptions['methods'] = configOptions.methods;
+  }
+  // Configures the Access-Control-Allow-Headers CORS header.
+  if ('headers' in configOptions) {
+    corsOptions['allowedHeaders'] = configOptions.headers;
+  }
+  // Configures the Access-Control-Allow-Credentials CORS header.
+  if ('credentials' in configOptions) {
+    corsOptions['credentials'] = configOptions.credentials;
+  }
+  // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  if ('optionsSuccessStatus' in configOptions) {
+    corsOptions['optionsSuccessStatus'] = configOptions.optionsSuccessStatus;
+  }
+  app.use(cors(corsOptions));
+}
+
 openapi.initialize({
   apiDoc: require('./handlers/openapi/api-doc.js'),
   app: app,
   paths: [
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
     path.resolve(__dirname, 'handlers/openapi/api-omrade'),
+    path.resolve(__dirname, 'handlers/openapi/api-nyko'),
     //path.resolve(__dirname, 'handlers/openapi/api-routes2'),
   ],
 });
@@ -56,31 +83,6 @@ app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:500
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit:50000}));
 app.use(express.static(path.join(__dirname, 'public')));
-if (conf['cors']) {
-  var configOptions = Object.assign({}, conf['cors']);
-  var corsOptions = {};
-  // Configures the Access-Control-Allow-Origin CORS header.
-  if ('origin' in configOptions) {
-    corsOptions['origin'] = configOptions.origin;
-  }
-  // Configures the Access-Control-Allow-Methods CORS header.
-  if ('methods' in configOptions) {
-    corsOptions['methods'] = configOptions.methods;
-  }
-  // Configures the Access-Control-Allow-Headers CORS header.
-  if ('headers' in configOptions) {
-    corsOptions['allowedHeaders'] = configOptions.headers;
-  }
-  // Configures the Access-Control-Allow-Credentials CORS header.
-  if ('credentials' in configOptions) {
-    corsOptions['credentials'] = configOptions.credentials;
-  }
-  // Some legacy browsers (IE11, various SmartTVs) choke on 204
-  if ('optionsSuccessStatus' in configOptions) {
-    corsOptions['optionsSuccessStatus'] = configOptions.optionsSuccessStatus;
-  }
-  app.use(cors(corsOptions));
-}
 
 app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
