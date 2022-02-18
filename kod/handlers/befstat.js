@@ -16,11 +16,15 @@ const befStat = async (req, res) => {
   const parsedUrl = url.parse(decodeURI(req.url), true);
   let nyko = '';
   let year = '';
+  let interval = 'skola';
   if ('nyko' in parsedUrl.query) {
     nyko = parsedUrl.query.nyko;
   }
   if ('year' in parsedUrl.query) {
     year = parsedUrl.query.year;
+  }
+  if ('interval' in parsedUrl.query) {
+    interval = parsedUrl.query.interval;
   }
 
   if (nyko !== '' && year !== '') {
@@ -42,15 +46,49 @@ const befStat = async (req, res) => {
     var connection = new Connection(config);
     connection.on('connect', function(err) {
         // If no error, then good to proceed.
-        console.log("Connected");
-        executeStatement(nyko, year, res);
+        // console.log("Connected");
+        executeStatement(nyko, year, interval, res);
     });
 
     connection.connect();
 
-    function executeStatement(nyko, year, res) {
+    function executeStatement(nyko, year, interval, res) {
      let men = 0;
      let women = 0;
+     let ageInterval = {};
+     let sqlInterval = "SELECT [AldersIntervallSkola], SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Ar] = " + year + " group by [AldersIntervallSkola] order by [AldersIntervallSkola] FOR JSON AUTO;"
+
+     if (interval === '5ar') {
+       sqlInterval = "SELECT [AldersIntervall5Ar], SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Ar] = " + year + " group by [AldersIntervall5Ar] order by [AldersIntervall5Ar] FOR JSON AUTO;";
+     }
+     requestAgeInterval = new Request(sqlInterval, function(err) {
+     // requestAgeInterval = new Request("SELECT [AldersIntervall], SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[BefolkningArNyko3] where [NYKO3] = " + nyko + " and [Ar] = " + year + " group by [AldersIntervall] order by [AldersIntervall] FOR JSON AUTO;", function(err) {
+     if (err) {
+         console.log(err);}
+     });
+     var resultJson = [];
+     requestAgeInterval.on('row', function(columns) {
+         columns.forEach(function(column) {
+           if (column.value === null) {
+             console.log('NULL');
+           } else {
+             resultJson+= column.value + " ";
+           }
+         });
+         ageInterval = resultJson;
+         resultJson = [];
+     });
+
+     requestAgeInterval.on('done', function(rowCount, more) {
+     console.log(rowCount + ' rows returned');
+     });
+
+     // Close the connection after the final event emitted by the request, after the callback passes
+     requestAgeInterval.on("requestCompleted", function (rowCount, more) {
+       //connection.close();
+       connection.execSql(requestMen);
+     });
+
      requestMen = new Request("SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[BefolkningArNyko3] where [NYKO3] = " + nyko + " and [Ar] = " + year + " and [Kon] = 'M';", function(err) {
      if (err) {
          console.log(err);}
@@ -102,13 +140,13 @@ const befStat = async (req, res) => {
      requestWomen.on("requestCompleted", function (rowCount, more) {
        // Create line chart of temperature the last 24 hours for sensor
        if ((parseInt(men) + parseInt(women)) >= 5) {
-         createSexChart(nyko, men, women, res);
+         createCharts(nyko, men, women, ageInterval, res);
        } else {
          emptyResponse(res, nyko, 'Ingen statistik visas, befolkningen mindre eller lika med 5!');
        }
        connection.close();
      });
-     connection.execSql(requestMen);
+     connection.execSql(requestAgeInterval);
     }
   } else {
     emptyResponse(res, nyko, 'NYKO eller år saknas!');
@@ -137,10 +175,8 @@ function emptyResponse(res, nyko, message) {
           <br>
               <h1>Demografisk statistik över Nyckelkodsområde: ${nyko} (Nivå ${nyko.length})</h1><br>
               <hr>
-              <h3><b>Statistik framtagen av Statistiska centralbyrån (SCB)</b></h3>
+              <h3><b>Statistik från Sundsvalls kommuns metadata-katalog</b></h3>
               <h3><b>Kontakt: geodata@sundsvall.se</b></h3><br><br>
-              <p>Mer information om statistiken går att hitta <a
-                      href="https://www.scb.se/contentassets/4d5516f7c4504a669fdf242136eacfee/meromnyko-.pdf">här</a>
               </p><br><br>
           </header>
       </div>
@@ -157,21 +193,73 @@ function emptyResponse(res, nyko, message) {
    </html>`);
 }
 
-function createSexChart(nyko, men, women, res) {
+function createCharts(nyko, men, women, ageInterval, res) {
+  ageIntervalJson = JSON.parse(ageInterval);
   co(function * () {
-    const options = { width: 400, height: 200 };
+    const optionsPie = { width: 400, height: 200, legend: true };
 
-    const pie = yield generate('pie', options, {
+    const pieSex = yield generate('pie', optionsPie, {
       series: [
       {value: women },
       {value: men }
     ]
     });
-    res.send(createHtml(nyko, women, men, pie));
+
+    let lblAgeInt = [];
+    let lblAgeIntValue = [];
+    ageIntervalJson.forEach((item) => {
+      lblAgeInt.push(item.AldersIntervall)
+      lblAgeIntValue.push(item.Antal)
+    });
+    const optionsBar = { width: 1000, height: 500, axisX: {
+    // The offset of the chart drawing area to the border of the container
+    offset: 30,
+    // Position where labels are placed. Can be set to `start` or `end` where `start` is equivalent to left or top on vertical axis and `end` is equivalent to right or bottom on horizontal axis.
+    position: 'end',
+    // Allows you to correct label positioning on this axis by positive or negative x and y offset.
+    labelOffset: {
+      x: 0,
+      y: 0
+    },
+    // If labels should be shown or not
+    showLabel: true,
+    // If the axis grid should be drawn or not
+    showGrid: true,
+    // This value specifies the minimum width in pixel of the scale steps
+    scaleMinSpace: 30,
+    // Use only integer values (whole numbers) for the scale steps
+    onlyInteger: false
+  }, axisY: {
+    // The offset of the chart drawing area to the border of the container
+    offset: 40,
+    // Position where labels are placed. Can be set to `start` or `end` where `start` is equivalent to left or top on vertical axis and `end` is equivalent to right or bottom on horizontal axis.
+    position: 'start',
+    // Allows you to correct label positioning on this axis by positive or negative x and y offset.
+    labelOffset: {
+      x: 0,
+      y: 0
+    },
+    // If labels should be shown or not
+    showLabel: true,
+    // If the axis grid should be drawn or not
+    showGrid: true,
+    // This value specifies the minimum height in pixel of the scale steps
+    scaleMinSpace: 20,
+    // Use only integer values (whole numbers) for the scale steps
+    onlyInteger: false
+  }};
+    const data = {
+      labels: lblAgeInt,
+      series: [
+        lblAgeIntValue
+      ]
+    };
+    const barAgeInterval = yield generate('bar', optionsBar, data);
+    res.send(createHtml(nyko, women, men, pieSex, barAgeInterval));
   })
 }
 
-function createHtml(nyko, women, men, chartSex) {
+function createHtml(nyko, women, men, chartSex, barAgeInterval) {
   const html = `<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -191,10 +279,8 @@ function createHtml(nyko, women, men, chartSex) {
         <br>
             <h1>Demografisk statistik över Nyckelkodsområde: ${nyko} (Nivå ${nyko.length})</h1><br>
             <hr>
-            <h3><b>Statistik framtagen av Statistiska centralbyrån (SCB)</b></h3>
+            <h3><b>Statistik från Sundsvalls kommuns metadata-katalog</b></h3>
             <h3><b>Kontakt: geodata@sundsvall.se</b></h3><br><br>
-            <p>Mer information om statistiken går att hitta <a
-                    href="https://www.scb.se/contentassets/4d5516f7c4504a669fdf242136eacfee/meromnyko-.pdf">här</a>
             </p><br><br>
         </header>
     </div>
@@ -202,13 +288,21 @@ function createHtml(nyko, women, men, chartSex) {
     <div class="grid-container-one">
 
         <div class="grid-item" id="alder">
-<h2>Befolkning efter kön</h2>
-${chartSex}
-<div class="lblWomen">Kvinnor ${((parseInt(women)/(parseInt(women) + parseInt(men)))*100).toFixed(1)} %</div>
-<div class="lblMen">Män ${((parseInt(men)/(parseInt(women) + parseInt(men)))*100).toFixed(1)} %</div>
+          <h2>Befolkning efter ålder</h2>
+          ${barAgeInterval}
+          <h3>Åldersgrupper (År)<h3>
+          <br/>
+        </div>
+    </div>
+    <div class="grid-container-one">
 
-</div>
-</div>
+        <div class="grid-item" id="kon">
+          <h2>Befolkning efter kön</h2>
+          ${chartSex}
+          <div class="lblWomen">Kvinnor ${((parseInt(women)/(parseInt(women) + parseInt(men)))*100).toFixed(1)} %</div>
+          <div class="lblMen">Män ${((parseInt(men)/(parseInt(women) + parseInt(men)))*100).toFixed(1)} %</div>
+        </div>
+    </div>
 <p>Senast uppdaterad: </p><br>
 <div class="footer"></div>
 </div>
