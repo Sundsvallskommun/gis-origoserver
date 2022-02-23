@@ -2,6 +2,7 @@ var express = require('express');
 var path = require('path');
 var bodyParser = require('body-parser');
 var cors = require('cors')
+const rateLimit = require('express-rate-limit');
 var openapi = require('express-openapi');
 var path = require('path');
 
@@ -13,6 +14,16 @@ var conf = require('./conf/config');
 var authSamlRouter = require('./handlers/authsaml');
 
 var app = express();
+
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+
+// apply rate limiter to all requests
+app.use(limiter);
 
 if (conf['cors']) {
   var configOptions = Object.assign({}, conf['cors']);
