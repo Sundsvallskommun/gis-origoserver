@@ -42,38 +42,18 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
       }
 
       function executeStatement(nyko, uttagsdatum, interval, res) {
-       let men = '';
-       let women = '';
-       let ageInterval = [];
-       let outtakeDate = [];
-       let uttag = uttagsdatum;
-       requestAgeUttagsdatum = new Request("SELECT DISTINCT [Uttagsdatum] FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] order by [Uttagsdatum] DESC FOR JSON AUTO;", function(err) {
-       if (err) {
-        console.log(err);}
-       });
-       requestAgeUttagsdatum.on('row', function(columns) {
-        outtakeDate = JSON.parse(columns[0].value);
-        var regEx = /^\d{4}-\d{2}-\d{2}$/;
-        if (!uttagsdatum.match(regEx)) {
-          uttag = outtakeDate[0].Uttagsdatum;
-        } else {
-          uttag = uttagsdatum;
-        }
-        sqlInterval = "SELECT [AldersIntervallSkola] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervallSkola] order by [AldersIntervallSkola] FOR JSON AUTO;"
-        if (interval === '5ar') {
-          sqlInterval = "SELECT [AldersIntervall5Ar] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervall5Ar] order by [AldersIntervall5Ar] FOR JSON AUTO;";
+        let men = '';
+        let women = '';
+        let ageInterval = [];
+        let outtakeDate = [];
+        let uttag = uttagsdatum;
+        sqlInterval = "SELECT [AldersIntervall5Ar] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervall5Ar] order by [AldersIntervall5Ar] FOR JSON AUTO;";
+        if (interval === 'Skola') {
+          sqlInterval = "SELECT [AldersIntervallSkola] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervallSkola] order by [AldersIntervallSkola] FOR JSON AUTO;"
         }
         sqlWomen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'K';";
         sqlMen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'M';";
-       });
 
-       requestAgeUttagsdatum.on('done', function(rowCount, more) {
-        console.log(rowCount + ' rows returned');
-       });
-
-       // Close the connection after the final event emitted by the request, after the callback passes
-       requestAgeUttagsdatum.on("requestCompleted", function (rowCount, more) {
-        //connection.close();
         requestAgeInterval = new Request(sqlInterval, function(err) {
         if (err) {
           console.log(err);}
@@ -172,8 +152,6 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
           connected = false;
         });
         connection.execSql(requestAgeInterval);
-       });
-       connection.execSql(requestAgeUttagsdatum);
       }
     } else {
       res.status(400).json({error: 'Missing required parameter nyko and/or year'});
@@ -185,7 +163,7 @@ module.exports = {
     const parsedUrl = url.parse(decodeURI(req.url), true);
     let nyko = '';
     let uttagsdatum = '';
-    let intervall = 'skola';
+    let intervall = '5ar';
     if ('nyko' in parsedUrl.query) {
       nyko = parsedUrl.query.nyko;
     } else {
@@ -195,7 +173,7 @@ module.exports = {
       uttagsdatum = parsedUrl.query.uttagsdatum;
     }
     if ('intervall' in parsedUrl.query) {
-      intervall = parsedUrl.query.intervall;
+      intervall = parsedUrl.query.intervall ? parsedUrl.query.intervall : '5ar';
     }
     doGet(req, res, nyko, uttagsdatum, intervall);
   },
