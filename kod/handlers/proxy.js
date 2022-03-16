@@ -31,5 +31,8 @@ function buildUrl(params) {
     }
     return prev;
   }, '');
+  if (url.search("application/vnd.ogc.gml")) {
+    url.replace('application/vnd.ogc.gml', 'application/vnd.ogc.wms_xml');
+  }
   return url;
 }
