@@ -11,7 +11,30 @@ module.exports = {
     version: '1.0',
   },
 
-  definitions: {},
+  definitions: {
+    NykoStat: {
+      type: 'object',
+      properties: {
+        men: {
+          description: 'The count of men in Nyko.',
+          type: 'integer'
+        },
+        women: {
+          description: 'The count of women in Nyko.',
+          type: 'integer'
+        },
+        ageByInterval: {
+          description: 'The ages of population sorted in intervals.',
+          type: 'array'
+        },
+        outtakeDate: {
+          description: 'The date of outtake of data.',
+          type: 'string'
+        }
+      },
+      required: ['name']
+    }
+},
 
   // paths are derived from args.routes.  These are filled in by fs-routes.
   paths: {},
