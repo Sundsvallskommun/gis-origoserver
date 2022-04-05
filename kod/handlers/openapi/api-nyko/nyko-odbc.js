@@ -17,8 +17,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
 
     if (nyko !== '') {
       const connectionString = 'DRIVER='+configOptions.db_driver+';SERVER='+configOptions.db_server+';DATABASE='+configOptions.db_database+';UID='+configOptions.db_auth_username+';PWD='+configOptions.db_auth_password+';';
-      console.log('Try connecting!');
-      console.log(connectionString);
+
       const connection = odbc.connect(connectionString, (error, connection) => {
         if (error) { console.log(error) }
         // Setup SQL queries
