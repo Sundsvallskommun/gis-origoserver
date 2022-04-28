@@ -18,6 +18,8 @@ var filterOn = '';
 var filterValue = '';
 var excludeOn = '';
 var excludeValue = '';
+var filter = '';
+var dateFilter = '';
 
 // Token holder
 let token;
@@ -68,12 +70,15 @@ const convertToGeojson = async (req, res) => {
           filterOn = convert.filterOn;
           filterValue = parsedUrl.query[filterOn];
         }
+        if (typeof convert.dateFilter !== 'undefined' || convert.dateFilter !== null) {
+          dateFilter = convert.dateFilter;
+        }
         if (typeof convert.excludeOn !== 'undefined' || convert.excludeOn !== null) {
           excludeOn = convert.excludeOn;
           excludeValue = convert.excludeValue;
         }
       if (q === convert.name) {
-          doGet(req, res, convert, convert.crs || srid, filterOn, filterValue, excludeOn, excludeValue);
+          doGet(req, res, convert, convert.crs || srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter);
         }
       });
     } else {
@@ -86,7 +91,7 @@ const convertToGeojson = async (req, res) => {
 // Export the module
 module.exports = convertToGeojson;
 
-function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue) {
+function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter) {
   // Setup the search call and wait for result
   const options = {
     url: encodeURI(configOptions.url),
@@ -111,7 +116,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
 
     con.query(`select * from ${configOptions.table}`, function (err, results) {
     if (err) throw err;
-    res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue));
+    res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter));
   });
   } else {
     var chunks = [];
@@ -130,7 +135,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
       if (configOptions.arrayOfObjects === null) {
         res.send(createGeojson(body, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue));
       } else {
-        res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue));
+        res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter));
       }
     })
     .catch(function (err) {
@@ -141,7 +146,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
   }
 }
 
-function createGeojson(entities, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue) {
+function createGeojson(entities, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter) {
   const result = {};
   let features = [];
   result['type'] = 'FeatureCollection';
@@ -150,7 +155,6 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
     type: 'name',
     properties: { name: 'urn:ogc:def:crs:EPSG::' + srid }
   };
-
   entities.forEach((entity) => {
     const tempEntity = {};
     const tempProperties = {};
@@ -195,14 +199,19 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
       hasGeometry = true;
     }
     configOptions.properties.forEach((property) => {
-      tempProperties[property] = getAttribute(entity, property);
+      if (configOptions.onlyUseLastPartOfNestedPropname) {
+        const propArray = property.split(".");
+        tempProperties[propArray[propArray.length-1]] = getAttribute(entity, property);
+      } else {
+        tempProperties[property] = getAttribute(entity, property);
+      }
     });
     tempEntity['properties'] = tempProperties;
     // Only add those with a geometry
     if (hasGeometry) {
       let pushEntity = false;
       // If no filter parameter was configed then all should be pushed
-      if (filterOn === '') {
+      if (filterOn === '' && dateFilter === '' ) {
         pushEntity = true;
       } else {
         // If no value for the filter is supplied then all should be pushed
@@ -211,6 +220,18 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
         } else {
           if (filterValue == getAttribute(entity, filterOn) ){
             pushEntity = true;
+          }
+        }
+      }
+      if (typeof dateFilter !== 'undefined') {
+        if (dateFilter.type === 'between' ){
+          const firstDate = getAttribute(entity, dateFilter.firstDate);
+          const secondDate = getAttribute(entity, dateFilter.secondDate);
+          if (Date.parse(firstDate) > Date.now()) {
+            pushEntity = false;
+          }
+          if (Date.parse(secondDate) < Date.now()) {
+            pushEntity = false;
           }
         }
       }
