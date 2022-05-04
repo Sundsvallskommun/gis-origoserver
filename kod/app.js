@@ -9,6 +9,7 @@ var path = require('path');
 var routes = require('./routes/index');
 var adminRouter = require('./routes/admin');
 var mapStateRouter = require('./routes/mapstate');
+const lmApiProxy = require('./routes/lmapiproxy');
 var errors = require('./routes/errors');
 var conf = require('./conf/config');
 var authSamlRouter = require('./handlers/authsaml');
@@ -98,6 +99,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
 app.use('/mapstate', mapStateRouter);
+if (conf['lmapiproxy']) {
+	app.use('/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
+}
 app.use('/origoserver/auth/saml', authSamlRouter);
 app.use(errors);
 
