@@ -100,7 +100,7 @@ app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
-	app.use('/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
+	app.use('/origoserver/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
 }
 app.use('/origoserver/auth/saml', authSamlRouter);
 app.use(errors);
