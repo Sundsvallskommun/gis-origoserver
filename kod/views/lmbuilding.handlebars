@@ -45,6 +45,11 @@
               </tbody>
             </table>
         </div>
+        {{#if objektidentitet }}
+          <div class="page-footer">
+            <a href="/origoserver/estate/inskrivning?objektid={{{objektidentitet}}}">Visa ägare</a>
+          </div>
+        {{/if}}
     </div>
   </div>
 </div>
