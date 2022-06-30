@@ -108,7 +108,6 @@ async function doGetAsyncCall(req, res, configOptions, proxyUrl) {
   var urlArr;
 
   urlArr = req.url.split('/');
-  console.log('urlArr[3]' + urlArr[3]);
   if (urlArr[3] !== '') {
     srid = decodeURI(urlArr[3]);
   }
@@ -122,13 +121,10 @@ async function doGetAsyncCall(req, res, configOptions, proxyUrl) {
     let bodyContent = req.body;
     if (srid !== '3006') {
       const newCoordinates = [];
-      console.log('srid' + srid);
-      console.log(bodyContent);
       bodyContent.coordinates[0].forEach((coord) => {
         newCoordinates.push(transformCoordinates(srid, '3006', coord));
       })
       bodyContent.coordinates = [newCoordinates];
-      console.log(bodyContent);
     }
 
     // Setup the search call and wait for result
