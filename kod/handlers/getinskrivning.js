@@ -120,30 +120,32 @@ async function doGetAsyncCall(req, res, config, objektid) {
 }
 
 function parseResult(result) {
-  var data = objectifier.find('properties', result);
-  var dataRegisterenhet = objectifier.find('fastighetsreferens', result);
-  var model = inskrivning();
   var inskriv = {};
-  var tomtratter;
-  //Registerenhet
-  inskriv.referens = parser(model.referens, dataRegisterenhet, referensParser);
-  if (linkToBuilding) {
-    inskriv.objektidentitet = dataRegisterenhet.objektidentitet;
-  }
+  if ('properties' in result.features[0]) {
+    var data = objectifier.find('properties', result);
+    var dataRegisterenhet = objectifier.find('fastighetsreferens', result);
+    var model = inskrivning();
+    var tomtratter;
+    //Registerenhet
+    inskriv.referens = parser(model.referens, dataRegisterenhet, referensParser);
+    if (linkToBuilding) {
+      inskriv.objektidentitet = dataRegisterenhet.objektidentitet;
+    }
 
-  //Ägare
-  inskriv.lagfart = lagfartParser(model.lagfart, data);
+    //Ägare
+    inskriv.lagfart = lagfartParser(model.lagfart, data);
 
-  //Tomträttshavare
-  tomtratter = tomtrattParser(model.tomtratt, data);
-  if (tomtratter.length) {
-    inskriv.tomtratt = tomtratter;
-  }
+    //Tomträttshavare
+    tomtratter = tomtrattParser(model.tomtratt, data);
+    if (tomtratter.length) {
+      inskriv.tomtratt = tomtratter;
+    }
 
-  //Tidigare Ägande
-  tidigareAgare = tidigareParser(model.tidigareAgande, data);
-  if (tidigareAgare.length) {
-    inskriv.tidigareAgande = tidigareAgare;
+    //Tidigare Ägande
+    tidigareAgare = tidigareParser(model.tidigareAgande, data);
+    if (tidigareAgare.length) {
+      inskriv.tidigareAgande = tidigareAgare;
+    }
   }
   return inskriv;
 }
