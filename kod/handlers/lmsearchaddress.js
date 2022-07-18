@@ -272,7 +272,13 @@ function concatResult(features) {
     const objektidentitet_1 = feature.properties.objektidentitet;
     const objektidentitet_2 = feature.properties.registerenhetsreferens[0].objektidentitet;
     const kommun = feature.properties.adressomrade ? feature.properties.adressomrade.kommundel.faststalltNamn : feature.properties.gardsadressomrade.adressomrade.kommundel.faststalltNamn;
-    const faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    let faststalltNamn = '';
+    if ('gardsadressomrade' in feature.properties) {
+      faststalltNamn = feature.properties.gardsadressomrade.adressomrade.faststalltNamn + ' ' + feature.properties.gardsadressomrade.faststalltNamn;
+    }
+    else {
+      faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    }
     let popularnamn = '';
     if ('adressplatsnamn' in feature.properties) {
       if ('popularnamn' in feature.properties.adressplatsnamn) {
