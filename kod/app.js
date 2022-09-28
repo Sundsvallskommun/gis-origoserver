@@ -58,7 +58,8 @@ openapi.initialize({
   paths: [
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
     path.resolve(__dirname, 'handlers/openapi/api-omrade'),
-    path.resolve(__dirname, 'handlers/openapi/api-nyko'),
+		path.resolve(__dirname, 'handlers/openapi/api-nyko'),
+		path.resolve(__dirname, 'handlers/openapi/api-precheck'),
     //path.resolve(__dirname, 'handlers/openapi/api-routes2'),
   ],
 });
