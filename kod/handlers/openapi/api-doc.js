@@ -33,8 +33,24 @@ module.exports = {
         }
       },
       required: ['name']
+    },
+    metadata: {
+      type: 'object',
+      properties: {
+        keys: {
+          description: 'Key',
+          type: 'string',
+          example: 'type'
+        },
+        value: {
+          description: 'Value',
+          type: 'string',
+          example: 'DISTRICT_HEATING'
+        }
+      },
+      readOnly: true
     }
-},
+  },
 
   // paths are derived from args.routes.  These are filled in by fs-routes.
   paths: {},
