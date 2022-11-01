@@ -112,6 +112,7 @@ module.exports = {
     } else {
       srid = '3006';
     }
+    console.log('Northing: ' + northing + 'Easting: ' + easting + 'Category: ' + category);
     doGet(req, res, northing, easting, category, srid);
   },
 };

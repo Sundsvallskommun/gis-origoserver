@@ -112,7 +112,7 @@ module.exports = {
 
 module.exports.get.apiDoc = {
   description: 'Get statistics about the population in NYKO.',
-  operationId: 'getNykoStat',
+  operationId: 'getNykoStatOdbc',
   parameters: [
       {
         in: 'query',
