@@ -180,9 +180,7 @@ module.exports.get.apiDoc = {
           deliverable: false,
           futureDeliverable: true,
           plannedDevelopmentDate: '2025-01-01',
-          metaData: {
-            type: 'DISTRICT_HEATING'
-          },
+          metaData: [{ type: 'DISTRICT_HEATING' }],
         }
       },
     },
