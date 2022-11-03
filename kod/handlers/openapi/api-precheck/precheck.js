@@ -30,7 +30,6 @@ function doGet(req, res, northing, easting, category, srid) {
     //I'm not going to redefine those two in latter examples.
     coord = proj4(projection4326, projection3006, coord);
   }
-  console.log(coord);
 
   const point = {
     "type": "Feature",
@@ -52,8 +51,6 @@ function doGet(req, res, northing, easting, category, srid) {
   metadata.push({ type: 'DISTRICT_HEATING' });
 
   if (ptsWithin.features.length > 0) {
-    console.log('ptsWithin');
-    console.log(ptsWithin.features[0].geometry);
     res.status(200).json({
       deliverable: true,
       metaData: metadata
@@ -61,6 +58,8 @@ function doGet(req, res, northing, easting, category, srid) {
   } else {
     res.status(200).json({
       deliverable: false,
+      futureDeliverable: false,
+      plannedDevelopmentDate: '',
       metaData: metadata
     });
   }
@@ -111,7 +110,6 @@ module.exports = {
     } else {
       srid = '3006';
     }
-    console.log('Northing: ' + northing + 'Easting: ' + easting + 'Category: ' + category);
     doGet(req, res, northing, easting, category, srid);
   },
 };
