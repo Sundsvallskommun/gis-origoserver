@@ -48,21 +48,20 @@ function doGet(req, res, northing, easting, category, srid) {
 
   var ptsWithin = pointsWithinPolygon(point, searchWithin);
 
+  const metadata = [];
+  metadata.push({ type: 'DISTRICT_HEATING' });
+
   if (ptsWithin.features.length > 0) {
-    console.log(ptsWithin.features[0].crs);
+    console.log('ptsWithin');
     console.log(ptsWithin.features[0].geometry);
     res.status(200).json({
       deliverable: true,
-      metaData: {
-        type: 'DISTRICT_HEATING'
-      }
+      metaData: metadata
     });
   } else {
     res.status(200).json({
       deliverable: false,
-      metaData: {
-        type: 'DISTRICT_HEATING'
-      }
+      metaData: metadata
     });
   }
 }
