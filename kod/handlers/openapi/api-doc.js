@@ -36,19 +36,15 @@ module.exports = {
     },
     metadata: {
       type: 'object',
-      properties: {
-        keys: {
-          description: 'Key',
-          type: 'string',
-          example: 'type'
-        },
-        value: {
-          description: 'Value',
-          type: 'string',
-          example: 'DISTRICT_HEATING'
-        }
+      additionalProperties: {
+          type: "string",
+          description: "Map with name-value pairs",
+          readOnly: true,
+          example: "type: DISTRICT_HEATING"
       },
-      readOnly: true
+      description: "Map with name-value pairs",
+      readOnly: true,
+      example: "type: DISTRICT_HEATING"
     }
   },
 
