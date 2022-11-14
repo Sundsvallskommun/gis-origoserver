@@ -167,11 +167,16 @@ module.exports.get.apiDoc = {
             format: 'date'
           },
           metaData: {
-            description: 'A list of additional metadata properties.',
-            type: 'array',
-            items: {
-              $ref: '#/definitions/metadata'
-            }
+            type: 'object',
+            additionalProperties: {
+                type: "string",
+                description: "Map with name-value pairs",
+                readOnly: true,
+                example: "type: DISTRICT_HEATING"
+            },
+            description: "A list of additional metadata properties.",
+            readOnly: true,
+            example: "type: DISTRICT_HEATING"
           }
         },
         example: {
