@@ -30,6 +30,16 @@ module.exports = {
         outtakeDate: {
           description: 'The date of outtake of data.',
           type: 'string'
+        },
+        variables: {
+          description: 'Variables with metrics for Nyko.',
+          type: 'object',
+          additionalProperties: {
+              type: "array",
+              items: {
+                "$ref": "#/definitions/Values"
+              }
+          }
         }
       },
       required: ['name']
@@ -45,6 +55,14 @@ module.exports = {
       description: "Map with name-value pairs",
       readOnly: true,
       example: "type: DISTRICT_HEATING"
+    },
+    Values: {
+      type: 'object',
+      additionalProperties: {
+          type: "string",
+          description: "Map with name-value pairs"
+      },
+      description: "Map with name-value pairs"
     }
   },
 

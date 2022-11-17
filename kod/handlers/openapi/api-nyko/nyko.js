@@ -12,6 +12,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
   let sqlInterval = '';
   let sqlWomen = '';
   let sqlMen = '';
+  let sqlVariabels = '';
 
     if (nyko !== '') {
       var config = {
@@ -47,12 +48,51 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
         let ageInterval = [];
         let outtakeDate = [];
         let uttag = uttagsdatum;
+        let variables = {};
+
         sqlInterval = "SELECT [AldersIntervall5Ar] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervall5Ar] order by [AldersIntervall5Ar] FOR JSON AUTO;";
         if (interval === 'Skola') {
           sqlInterval = "SELECT [AldersIntervallSkola] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttag + "' group by [AldersIntervallSkola] order by [AldersIntervallSkola] FOR JSON AUTO;"
         }
         sqlWomen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'K';";
         sqlMen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'M';";
+        sqlVariabels = "SELECT * FROM [EDW].[mart_scb].[vSocioekonomiskStatistik] WHERE [NYKO] = '2281'" + nyko + "''";
+
+        requestAgeInterval = new Request(sqlVariabels, function(err) {
+        if (err) {
+          console.log(err);}
+        });
+        requestAgeInterval.on('row', function(columns) {
+          const varBistand20 = [];
+          const varAndelUnga = [];
+          const varAndelAldre = [];
+          const varAndelEjEU = [];
+          const varAndelArbetande = [];
+          const varAndelUtbildade = [];
+          const varAndelArbetslosa = [];
+          const varInkomst = [];
+          const varOhalsa = [];
+          if (columns.Variabel === 'Andel av befolkningen med ekonomiskt bistånd 20+ år') {
+            varBistand20.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel befolkning 0-19 år') {
+            varAndelUnga.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel befolkning 65 år +') {
+            varAndelAldre.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel födda utanför EU28') {
+            varAndelEjEU.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel förvärvsarbetande 20-64 år') {
+            varAndelArbetande.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel med eftergymnasial utbildning 20-64 år') {
+            varAndelUtbildade.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Andel öppet arbetslösa 16-64 år') {
+            varAndelArbetslosa.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Inkomst (median) tusentals kronor 20+ år') {
+            varInkomst.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          } else if (columns.Variabel === 'Ohälsotal (antal dagar) 16-64 år') {
+            varOhalsa.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          }
+          variables = { assistans: varBistand20, young: varAndelUnga, old: varAndelAldre, nonEU: varAndelEjEU, working: varAndelArbetande, educated: varAndelUtbildade, unemployed: varAndelArbetslosa, income: varInkomst, unhealth: varOhalsa };
+        });
 
         requestAgeInterval = new Request(sqlInterval, function(err) {
         if (err) {
@@ -144,7 +184,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
             ageInterval = [];
           }
           if ((parseInt(men) + parseInt(women)) >= 3) {
-            res.status(200).json({ men: men, women: women, ageByInterval: ageInterval, outtakeDate: uttagsdatum });
+            res.status(200).json({ men: men, women: women, ageByInterval: ageInterval, outtakeDate: uttagsdatum, variables: variables });
           } else {
             res.status(200).json({error: 'Ingen statistik visas, befolkningen mindre eller lika med 3!'});
           }

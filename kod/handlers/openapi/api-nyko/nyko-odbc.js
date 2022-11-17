@@ -9,11 +9,13 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
   let sqlInterval = '';
   let sqlWomen = '';
   let sqlMen = '';
+  let sqlVariabels = '';
   let men = '';
   let women = '';
   let ageInterval = [];
   let ageIntervalNewOrder = [];
   let showIntervals = true;
+  let variables = [];
 
     if (nyko !== '') {
       const connectionString = 'DRIVER='+configOptions.db_driver+';SERVER='+configOptions.db_server+';DATABASE='+configOptions.db_database+';UID='+configOptions.db_auth_username+';PWD='+configOptions.db_auth_password+';';
@@ -24,9 +26,44 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
         sqlWomen = "SELECT SUM([AntalPersoner]) as women FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttagsdatum + "' and [Kon] = 'K';";
         sqlMen = "SELECT SUM([AntalPersoner]) as men FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttagsdatum + "' and [Kon] = 'M';";
         sqlInterval = "SELECT [AldersIntervall5Ar] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttagsdatum + "' group by [AldersIntervall5Ar] order by [AldersIntervall5Ar];";
+        sqlVariabels = "SELECT * FROM [EDW].[mart_scb].[vSocioekonomiskStatistik] WHERE [NYKO] = '2281'" + nyko + "''";
         if (interval === 'Skola') {
           sqlInterval = "SELECT [AldersIntervallSkola] as 'Label', SUM([AntalPersoner]) as 'Antal' FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%' and [Uttagsdatum] = '" + uttagsdatum + "' group by [AldersIntervallSkola] order by [AldersIntervallSkola];"
         }
+        connection.query(sqlVariabels, (error, result) => {
+          if (error) { console.error(error) }
+          const varBistand20 = [];
+          const varAndelUnga = [];
+          const varAndelAldre = [];
+          const varAndelEjEU = [];
+          const varAndelArbetande = [];
+          const varAndelUtbildade = [];
+          const varAndelArbetslosa = [];
+          const varInkomst = [];
+          const varOhalsa = [];
+          result.forEach((row) => {
+            if (row.Variabel === 'Andel av befolkningen med ekonomiskt bistånd 20+ år') {
+              varBistand20.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel befolkning 0-19 år') {
+              varAndelUnga.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel befolkning 65 år +') {
+              varAndelAldre.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel födda utanför EU28') {
+              varAndelEjEU.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel förvärvsarbetande 20-64 år') {
+              varAndelArbetande.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel med eftergymnasial utbildning 20-64 år') {
+              varAndelUtbildade.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Andel öppet arbetslösa 16-64 år') {
+              varAndelArbetslosa.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Inkomst (median) tusentals kronor 20+ år') {
+              varInkomst.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            } else if (row.Variabel === 'Ohälsotal (antal dagar) 16-64 år') {
+              varOhalsa.push({ year: row.Ar, men: row.Man, women: row.Kvinnor, total: row.Totalt })
+            }
+          })
+          variables.push({ assistans: varBistand20, young: varAndelUnga, old: varAndelAldre, nonEU: varAndelEjEU, working: varAndelArbetande, educated: varAndelUtbildade, unemployed: varAndelArbetslosa, income: varInkomst, unhealth: varOhalsa });
+        });
         connection.query(sqlWomen, (error, result) => {
           if (error) { console.error(error) }
           women = result[0].women;
