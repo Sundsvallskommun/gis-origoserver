@@ -120,25 +120,45 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
           console.log(err);}
         });
         requestVariables.on('row', function(columns) {
-          console.log(columns);
-          if (columns.Variabel === 'Andel av befolkningen med ekonomiskt bistånd 20+ år') {
-            varBistand20.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel befolkning 0-19 år') {
-            varAndelUnga.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel befolkning 65 år +') {
-            varAndelAldre.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel födda utanför EU28') {
-            varAndelEjEU.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel förvärvsarbetande 20-64 år') {
-            varAndelArbetande.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel med eftergymnasial utbildning 20-64 år') {
-            varAndelUtbildade.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Andel öppet arbetslösa 16-64 år') {
-            varAndelArbetslosa.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Inkomst (median) tusentals kronor 20+ år') {
-            varInkomst.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
-          } else if (columns.Variabel === 'Ohälsotal (antal dagar) 16-64 år') {
-            varOhalsa.push({ year: columns.Ar, men: columns.Man, women: columns.Kvinnor, total: columns.Totalt })
+          let variable = '';
+          let year = '';
+          let men = '';
+          let women = '';
+          let total = '';
+
+          columns.forEach((column) => {
+            console.log('column');
+            console.log(column);
+            if (column.metadata.colName === 'Variabel') {
+              variable = column.value;
+            } else if (column.metadata.colName === 'Ar') {
+              year = column.value;
+            } else if (column.metadata.colName === 'Man') {
+              men = column.value;
+            } else if (column.metadata.colName === 'Kvinnor') {
+              women = column.value;
+            } else if (column.metadata.colName === 'Totalt') {
+              total = column.value;
+            }
+          });
+          if (variable === 'Andel av befolkningen med ekonomiskt bistånd 20+ år') {
+            varBistand20.push({ year, men, women, total })
+          } else if (variable === 'Andel befolkning 0-19 år') {
+            varAndelUnga.push({ year, men, women, total })
+          } else if (variable === 'Andel befolkning 65 år +') {
+            varAndelAldre.push({ year, men, women, total })
+          } else if (variable === 'Andel födda utanför EU28') {
+            varAndelEjEU.push({ year, men, women, total })
+          } else if (variable === 'Andel förvärvsarbetande 20-64 år') {
+            varAndelArbetande.push({ year, men, women, total })
+          } else if (variable === 'Andel med eftergymnasial utbildning 20-64 år') {
+            varAndelUtbildade.push({ year, men, women, total })
+          } else if (variable === 'Andel öppet arbetslösa 16-64 år') {
+            varAndelArbetslosa.push({ year, men, women, total })
+          } else if (variable === 'Inkomst (median) tusentals kronor 20+ år') {
+            varInkomst.push({ year, men, women, total })
+          } else if (variable === 'Ohälsotal (antal dagar) 16-64 år') {
+            varOhalsa.push({ year, men, women, total })
           }
         });
 
