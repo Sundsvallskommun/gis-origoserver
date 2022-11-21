@@ -27,6 +27,8 @@ var lmBuilding = require('../handlers/lmbuilding');
 var iotTemp = require('../handlers/iottemp');
 var befStat = require('../handlers/befstat');
 var cascadeWMS = require('../handlers/cascadewms');
+var auth = require('../handlers/auth');
+var clients = require('../handlers/clients');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -60,5 +62,7 @@ router.all('/apicontract/getallcontracts/*', apiContract['getAllContracts']);
 router.all('/iottemp', iotTemp);
 router.all('/befstat', befStat);
 router.all('/cascadewms/*', cascadeWMS);
+router.use('/auth', auth);
+router.use('/clients', clients);
 
 module.exports = router;
