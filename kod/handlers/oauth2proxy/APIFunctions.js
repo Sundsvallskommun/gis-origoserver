@@ -30,7 +30,7 @@ async function getToken(service) {
     return token;
 }
 
-async function getFromUrl(token, url) {
+async function getFromUrl(token, url, accept = 'application/geo+json') {
     var returnResponse;
 
     var requestOptions = {
@@ -38,7 +38,7 @@ async function getFromUrl(token, url) {
         url: url,
         headers: {
           'Authorization': 'Bearer ' + token,
-          'Accept': 'application/geo+json'
+          'Accept': accept
         }
     };
 
