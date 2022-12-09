@@ -29,6 +29,7 @@ var befStat = require('../handlers/befstat');
 var cascadeWMS = require('../handlers/cascadewms');
 var auth = require('../handlers/auth');
 var clients = require('../handlers/clients');
+var disturbances = require('../handlers/disturbances');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -64,5 +65,6 @@ router.all('/befstat', befStat);
 router.all('/cascadewms/*', cascadeWMS);
 router.use('/auth', auth);
 router.use('/clients', clients);
+router.all('/disturbances', disturbances);
 
 module.exports = router;
