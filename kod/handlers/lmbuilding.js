@@ -84,7 +84,7 @@ async function doGetAsyncCall(req, res, configOptions, proxyUrl) {
     //id = decodeURI(searchArray[4]);
     var id = objectifier.get('query.registerenhet', req) || '';
     var options1 = {
-        url: encodeURI(configOptions.url + '/referens/registerenhet/' + id + '?includeData=total'),
+        url: encodeURI(configOptions.url + '/referens/beror/' + id + '?includeData=total'),
         method: 'GET',
         headers: {
           'content-type': 'application/json',
@@ -146,11 +146,7 @@ function getObjektArr(options) {
           if (error) {
             console.log('Error get list of buildings: ' + error);
           } else {
-            const objList = [];
-            body.forEach(function(item, index, array) {
-              objList.push(item.objektidentitet)
-            })
-            resolve(objList);
+             resolve(body);
           }
       })
   })

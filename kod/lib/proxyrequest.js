@@ -11,7 +11,7 @@ module.exports = function proxyRequest(req, res, options) {
   .on('error', err => {
     const msg = 'Error!';
     console.error(msg, err);
-    res.status(500).send(msg);
+    return res.status(500).send(msg);
   })
   .pipe(res);
 }
