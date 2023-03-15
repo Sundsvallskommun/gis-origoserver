@@ -96,6 +96,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
   const options = {
     url: encodeURI(configOptions.url),
     method: 'GET',
+    strictSSL: false,
     json: false  // Automatically parses the JSON string in the response set to true
   }
 
