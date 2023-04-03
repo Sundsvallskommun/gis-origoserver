@@ -81,7 +81,7 @@ function createGeojson(objectArr, title, srid) {
       if ("coord" in object) {
         tempObject['geometry'] = {
   				"type" : "Point",
-  				"coordinates" : [object.coord[2].replace("E", ""),object.coord[1].replace("N", "")]
+  				"coordinates" : [Number(object.coord[2].replace("E", "")),Number(object.coord[1].replace("N", ""))]
         };
         hasGeometry = true;
       } else {

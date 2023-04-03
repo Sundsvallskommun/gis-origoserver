@@ -96,7 +96,6 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
   const options = {
     url: encodeURI(configOptions.url),
     method: 'GET',
-    strictSSL: false,
     json: false  // Automatically parses the JSON string in the response set to true
   }
 
@@ -174,7 +173,7 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
     } else if ("LatLng" === configOptions.geometry_format) {
       if (configOptions.geometry.length > 1) {
         tempEntity['geometry'] = {
-          coordinates: [ entity[configOptions.geometry[1]], entity[configOptions.geometry[0]] ],
+          coordinates: [ Number(entity[configOptions.geometry[1]]), Number(entity[configOptions.geometry[0]]) ],
           type: configOptions.geometry_type
         };
         hasGeometry = true;
