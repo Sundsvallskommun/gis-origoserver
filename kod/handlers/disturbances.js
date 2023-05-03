@@ -598,7 +598,6 @@ async function getUrl(req, res, service, url) {
             default:
               break;
           }
-          disturbancesOpenSundsvallFastland += 1;
         }
         if (ptsWithinSundsvallSodra.features.length > 0) {
           switch (disturbance.status) {
