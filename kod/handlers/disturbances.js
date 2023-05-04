@@ -430,6 +430,28 @@ async function getUrl(req, res, service, url) {
   let disturbancesOpenSundsvallVastra = 0;
   let disturbancesOpenSundsvallNorra = 0;
   let disturbancesOpenSundsvallOstra = 0;
+  let disturbancesAlnon = {};
+  let disturbancesCentrumAlnon = {};
+  let disturbancesNordvastraAlnon = {};
+  let disturbancesNordostraAlnon = {};
+  let disturbancesSydvastraAlnon = {};
+  let disturbancesSydostraAlnon = {};
+  let disturbancesSundsvallFastland = {};
+  let disturbancesSundsvallSodra = {};
+  let disturbancesSundsvallVastra = {};
+  let disturbancesSundsvallNorra = {};
+  let disturbancesSundsvallOstra = {};
+  let affectedCustomersAlnon = 0;
+  let affectedCustomersCentrumAlnon = 0;
+  let affectedCustomersNordvastraAlnon = 0;
+  let affectedCustomersNordostraAlnon = 0;
+  let affectedCustomersSydvastraAlnon = 0;
+  let affectedCustomersSydostraAlnon = 0;
+  let affectedCustomersSundsvallFastland = 0;
+  let affectedCustomersSundsvallSodra = 0;
+  let affectedCustomersSundsvallVastra = 0;
+  let affectedCustomersSundsvallNorra = 0;
+  let affectedCustomersSundsvallOstra = 0;
   let disturbancesClosedAlnon = 0;
   let disturbancesClosedCentrumAlnon = 0;
   let disturbancesClosedNordvastraAlnon = 0;
@@ -500,7 +522,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenAlnon += 1;
+              affectedCustomersAlnon += 1;
+              if (!(disturbance.id in disturbancesAlnon)) {
+                disturbancesAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedAlnon += 1;
@@ -515,7 +551,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedCentrumAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenCentrumAlnon += 1;
+              affectedCustomersCentrumAlnon += 1;
+              if (!(disturbance.id in disturbancesCentrumAlnon)) {
+                disturbancesCentrumAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenCentrumAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedCentrumAlnon += 1;
@@ -530,7 +580,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSydvastraAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSydvastraAlnon += 1;
+              affectedCustomersSydvastraAlnon += 1;
+              if (!(disturbance.id in disturbancesSydvastraAlnon)) {
+                disturbancesSydvastraAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSydvastraAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSydvastraAlnon += 1;
@@ -545,7 +609,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSydostraAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSydostraAlnon += 1;
+              affectedCustomersSydostraAlnon += 1;
+              if (!(disturbance.id in disturbancesSydostraAlnon)) {
+                disturbancesSydostraAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSydostraAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSydostraAlnon += 1;
@@ -560,7 +638,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedNordostraAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenNordostraAlnon += 1;
+              affectedCustomersNordostraAlnon += 1;
+              if (!(disturbance.id in disturbancesNordostraAlnon)) {
+                disturbancesNordostraAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenNordostraAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedNordostraAlnon += 1;
@@ -575,7 +667,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedNordvastraAlnon += 1;
               break;          
             case "OPEN":
-              disturbancesOpenNordvastraAlnon += 1;
+              affectedCustomersNordvastraAlnon += 1;
+              if (!(disturbance.id in disturbancesNordvastraAlnon)) {
+                disturbancesNordvastraAlnon[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenNordvastraAlnon += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedNordvastraAlnon += 1;
@@ -590,7 +696,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSundsvallFastland += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSundsvallFastland += 1;
+              affectedCustomersSundsvallFastland += 1;
+              if (!(disturbance.id in disturbancesSundsvallFastland)) {
+                disturbancesSundsvallFastland[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSundsvallFastland += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSundsvallFastland += 1;
@@ -605,7 +725,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSundsvallSodra += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSundsvallSodra += 1;
+              affectedCustomersSundsvallSodra += 1;
+              if (!(disturbance.id in disturbancesSundsvallSodra)) {
+                disturbancesSundsvallSodra[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSundsvallSodra += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSundsvallSodra += 1;
@@ -620,7 +754,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSundsvallNorra += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSundsvallNorra += 1;
+              affectedCustomersSundsvallNorra += 1;
+              if (!(disturbance.id in disturbancesSundsvallNorra)) {
+                disturbancesSundsvallNorra[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSundsvallNorra += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSundsvallNorra += 1;
@@ -635,7 +783,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSundsvallVastra += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSundsvallVastra += 1;
+              affectedCustomersSundsvallVastra += 1;
+              if (!(disturbance.id in disturbancesSundsvallVastra)) {
+                disturbancesSundsvallVastra[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSundsvallVastra += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSundsvallVastra += 1;
@@ -650,7 +812,21 @@ async function getUrl(req, res, service, url) {
               disturbancesClosedSundsvallOstra += 1;
               break;          
             case "OPEN":
-              disturbancesOpenSundsvallOstra += 1;
+              affectedCustomersSundsvallOstra += 1;
+              if (!(disturbance.id in disturbancesSundsvallOstra)) {
+                disturbancesSundsvallOstra[disturbance.id] = {
+                  id: disturbance.id, 
+                  category: disturbance.category, 
+                  status: disturbance.status, 
+                  title: disturbance.title, 
+                  description: disturbance.description, 
+                  plannedStartDate: disturbance.plannedStartDate, 
+                  plannedStopDate: disturbance.plannedStopDate, 
+                  created: disturbance.created, 
+                  updated: disturbance.updated
+                };
+                disturbancesOpenSundsvallOstra += 1;
+              }
               break;          
             case "PLANNED":
               disturbancesPlannedSundsvallOstra += 1;
@@ -669,23 +845,28 @@ async function getUrl(req, res, service, url) {
       }
     });
   });
+  /*
   arrGeojson.push({
     type: 'Feature',
     geometry: polyAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenAlnon,
+      affectedCustomers: affectedCustomersAlnon,
       closedDisturbances: disturbancesClosedAlnon,
       plannedDisturbances: disturbancesPlannedAlnon,
-      zon: 'Alnön'
+      disturbances: disturbancesAlnon,
+     zon: 'Alnön'
     }
-  });
+  });*/
   arrGeojson.push({
     type: 'Feature',
     geometry: polyCentrumAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenCentrumAlnon,
+      affectedCustomers: affectedCustomersCentrumAlnon,
       closedDisturbances: disturbancesClosedCentrumAlnon,
       plannedDisturbances: disturbancesPlannedCentrumAlnon,
+      disturbances: disturbancesCentrumAlnon,
       zon: 'Centrum Alnön'
     }
   });
@@ -694,8 +875,10 @@ async function getUrl(req, res, service, url) {
     geometry: polySydvastraAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSydvastraAlnon,
+      affectedCustomers: affectedCustomersSydvastraAlnon,
       closedDisturbances: disturbancesClosedSydvastraAlnon,
       plannedDisturbances: disturbancesPlannedSydvastraAlnon,
+      disturbances: disturbancesSydvastraAlnon,
       zon: 'Sydvästra Alnön'
     }
   });
@@ -704,8 +887,10 @@ async function getUrl(req, res, service, url) {
     geometry: polySydostraAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSydostraAlnon,
+      affectedCustomers: affectedCustomersSydostraAlnon,
       closedDisturbances: disturbancesClosedSydostraAlnon,
       plannedDisturbances: disturbancesPlannedSydostraAlnon,
+      disturbances: disturbancesSydostraAlnon,
       zon: 'Sydöstra Alnön'
     }
   });
@@ -714,8 +899,10 @@ async function getUrl(req, res, service, url) {
     geometry: polyNordvastraAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenNordvastraAlnon,
+      affectedCustomers: affectedCustomersNordvastraAlnon,
       closedDisturbances: disturbancesClosedNordvastraAlnon,
       plannedDisturbances: disturbancesPlannedNordvastraAlnon,
+      disturbances: disturbancesNordvastraAlnon,
       zon: 'Nordvästra Alnön'
     }
   });
@@ -724,28 +911,34 @@ async function getUrl(req, res, service, url) {
     geometry: polyNordostraAlnon['geometry'],
     properties: {
       openDisturbances: disturbancesOpenNordostraAlnon,
+      affectedCustomers: affectedCustomersNordostraAlnon,
       closedDisturbances: disturbancesClosedNordostraAlnon,
       plannedDisturbances: disturbancesPlannedNordostraAlnon,
+      disturbances: disturbancesNordostraAlnon,
       zon: 'Nordöstra Alnön'
     }
   });
-  arrGeojson.push({
+/*  arrGeojson.push({
     type: 'Feature',
     geometry: polySundsvallFastland['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSundsvallFastland,
+      affectedCustomers: affectedCustomersSundsvallFastland,
       closedDisturbances: disturbancesClosedSundsvallFastland,
       plannedDisturbances: disturbancesPlannedSundsvallFastland,
+      disturbances: disturbancesSundsvallFastland,
       zon: 'Sundsvall Fastland'
     }
-  });
+  });*/
   arrGeojson.push({
     type: 'Feature',
     geometry: polySundsvallSodra['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSundsvallSodra,
+      affectedCustomers: affectedCustomersSundsvallSodra,
       closedDisturbances: disturbancesClosedSundsvallSodra,
       plannedDisturbances: disturbancesPlannedSundsvallSodra,
+      disturbances: disturbancesSundsvallSodra,
       zon: 'Sundsvall Södra'
     }
   });
@@ -754,8 +947,10 @@ async function getUrl(req, res, service, url) {
     geometry: polySundsvallNorra['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSundsvallNorra,
+      affectedCustomers: affectedCustomersSundsvallNorra,
       closedDisturbances: disturbancesClosedSundsvallNorra,
       plannedDisturbances: disturbancesPlannedSundsvallNorra,
+      disturbances: disturbancesSundsvallNorra,
       zon: 'Sundsvall Norra'
     }
   });
@@ -764,8 +959,10 @@ async function getUrl(req, res, service, url) {
     geometry: polySundsvallVastra['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSundsvallVastra,
+      affectedCustomers: affectedCustomersSundsvallVastra,
       closedDisturbances: disturbancesClosedSundsvallVastra,
       plannedDisturbances: disturbancesPlannedSundsvallVastra,
+      disturbances: disturbancesSundsvallVastra,
       zon: 'Sundsvall Västra'
     }
   });
@@ -774,8 +971,10 @@ async function getUrl(req, res, service, url) {
     geometry: polySundsvallOstra['geometry'],
     properties: {
       openDisturbances: disturbancesOpenSundsvallOstra,
+      affectedCustomers: affectedCustomersSundsvallOstra,
       closedDisturbances: disturbancesClosedSundsvallOstra,
       plannedDisturbances: disturbancesPlannedSundsvallOstra,
+      disturbances: disturbancesSundsvallOstra,
       zon: 'Sundsvall Ostra'
     }
   });
