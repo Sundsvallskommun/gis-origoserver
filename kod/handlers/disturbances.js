@@ -477,375 +477,377 @@ async function getUrl(req, res, service, url) {
   let srid = '3006';
   var token = await simpleStorage.getToken(service);
   var urlResponse = await apiFunctions.getFromUrl(token, url, 'application/json');
-  urlResponse.forEach((disturbance) => {
-    disturbance.affecteds.forEach((affected) => {
-      let updated = '';
-      if ('updated' in disturbance) {
-        updated = disturbance.updated;
-      }
-      if ('coordinates' in affected) {
-        const coordArr = affected.coordinates.split(':')
-        if (coordArr[0] === 'SWEREF 991715') {
-          srid = '3014';
+  if (typeof urlResponse !== 'undefined') {
+    urlResponse.forEach((disturbance) => {
+      disturbance.affecteds.forEach((affected) => {
+        let updated = '';
+        if ('updated' in disturbance) {
+          updated = disturbance.updated;
         }
-        const crs =  "EPSG:" + srid;
+        if ('coordinates' in affected) {
+          const coordArr = affected.coordinates.split(':')
+          if (coordArr[0] === 'SWEREF 991715') {
+            srid = '3014';
+          }
+          const crs =  "EPSG:" + srid;
 
-        const point = {
-          "type": "Feature",
-          "crs" : {
-            "type" : "name",
-            "properties" : {
-              "name" : crs
+          const point = {
+            "type": "Feature",
+            "crs" : {
+              "type" : "name",
+              "properties" : {
+                "name" : crs
+              }
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [Number(coordArr[2].replace('E', '')),Number(coordArr[1].replace('N', ''))]
             }
-          },
-          "geometry": {
-            "type": "Point",
-            "coordinates": [Number(coordArr[2].replace('E', '')),Number(coordArr[1].replace('N', ''))]
-          }
-        };
- 
-        var ptsWithinAlnon = pointsWithinPolygon(point, polyAlnon);
-        var ptsWithinCentrumAlnon = pointsWithinPolygon(point, polyCentrumAlnon);
-        var ptsWithinSydvastraAlnon = pointsWithinPolygon(point, polySydvastraAlnon);
-        var ptsWithinSydostraAlnon = pointsWithinPolygon(point, polySydostraAlnon);
-        var ptsWithinNordostraAlnon = pointsWithinPolygon(point, polyNordostraAlnon);
-        var ptsWithinNordvastraAlnon = pointsWithinPolygon(point, polyNordvastraAlnon);
-        var ptsWithinSundsvallFastland = pointsWithinPolygon(point, polySundsvallFastland);
-        var ptsWithinSundsvallSodra = pointsWithinPolygon(point, polySundsvallSodra);
-        var ptsWithinSundsvallNorra = pointsWithinPolygon(point, polySundsvallNorra);
-        var ptsWithinSundsvallVastra = pointsWithinPolygon(point, polySundsvallVastra);
-        var ptsWithinSundsvallOstra = pointsWithinPolygon(point, polySundsvallOstra);
+          };
+  
+          var ptsWithinAlnon = pointsWithinPolygon(point, polyAlnon);
+          var ptsWithinCentrumAlnon = pointsWithinPolygon(point, polyCentrumAlnon);
+          var ptsWithinSydvastraAlnon = pointsWithinPolygon(point, polySydvastraAlnon);
+          var ptsWithinSydostraAlnon = pointsWithinPolygon(point, polySydostraAlnon);
+          var ptsWithinNordostraAlnon = pointsWithinPolygon(point, polyNordostraAlnon);
+          var ptsWithinNordvastraAlnon = pointsWithinPolygon(point, polyNordvastraAlnon);
+          var ptsWithinSundsvallFastland = pointsWithinPolygon(point, polySundsvallFastland);
+          var ptsWithinSundsvallSodra = pointsWithinPolygon(point, polySundsvallSodra);
+          var ptsWithinSundsvallNorra = pointsWithinPolygon(point, polySundsvallNorra);
+          var ptsWithinSundsvallVastra = pointsWithinPolygon(point, polySundsvallVastra);
+          var ptsWithinSundsvallOstra = pointsWithinPolygon(point, polySundsvallOstra);
 
-        if (ptsWithinAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersAlnon += 1;
-              if (!(disturbance.id in disturbancesAlnon)) {
-                disturbancesAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedAlnon += 1;
-              break;          
-            default:
-              break;
+          if (ptsWithinAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersAlnon += 1;
+                if (!(disturbance.id in disturbancesAlnon)) {
+                  disturbancesAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinCentrumAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedCentrumAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersCentrumAlnon += 1;
+                if (!(disturbance.id in disturbancesCentrumAlnon)) {
+                  disturbancesCentrumAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenCentrumAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedCentrumAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSydvastraAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSydvastraAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSydvastraAlnon += 1;
+                if (!(disturbance.id in disturbancesSydvastraAlnon)) {
+                  disturbancesSydvastraAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSydvastraAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSydvastraAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSydostraAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSydostraAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSydostraAlnon += 1;
+                if (!(disturbance.id in disturbancesSydostraAlnon)) {
+                  disturbancesSydostraAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSydostraAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSydostraAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinNordostraAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedNordostraAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersNordostraAlnon += 1;
+                if (!(disturbance.id in disturbancesNordostraAlnon)) {
+                  disturbancesNordostraAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenNordostraAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedNordostraAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinNordvastraAlnon.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedNordvastraAlnon += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersNordvastraAlnon += 1;
+                if (!(disturbance.id in disturbancesNordvastraAlnon)) {
+                  disturbancesNordvastraAlnon[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenNordvastraAlnon += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedNordvastraAlnon += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSundsvallFastland.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSundsvallFastland += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSundsvallFastland += 1;
+                if (!(disturbance.id in disturbancesSundsvallFastland)) {
+                  disturbancesSundsvallFastland[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSundsvallFastland += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSundsvallFastland += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSundsvallSodra.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSundsvallSodra += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSundsvallSodra += 1;
+                if (!(disturbance.id in disturbancesSundsvallSodra)) {
+                  disturbancesSundsvallSodra[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSundsvallSodra += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSundsvallSodra += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSundsvallNorra.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSundsvallNorra += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSundsvallNorra += 1;
+                if (!(disturbance.id in disturbancesSundsvallNorra)) {
+                  disturbancesSundsvallNorra[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSundsvallNorra += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSundsvallNorra += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSundsvallVastra.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSundsvallVastra += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSundsvallVastra += 1;
+                if (!(disturbance.id in disturbancesSundsvallVastra)) {
+                  disturbancesSundsvallVastra[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSundsvallVastra += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSundsvallVastra += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (ptsWithinSundsvallOstra.features.length > 0) {
+            switch (disturbance.status) {
+              case "CLOSED":
+                disturbancesClosedSundsvallOstra += 1;
+                break;          
+              case "OPEN":
+                affectedCustomersSundsvallOstra += 1;
+                if (!(disturbance.id in disturbancesSundsvallOstra)) {
+                  disturbancesSundsvallOstra[disturbance.id] = {
+                    id: disturbance.id, 
+                    category: disturbance.category, 
+                    status: disturbance.status, 
+                    title: disturbance.title, 
+                    description: disturbance.description, 
+                    plannedStartDate: disturbance.plannedStartDate, 
+                    plannedStopDate: disturbance.plannedStopDate, 
+                    created: disturbance.created, 
+                    updated: disturbance.updated
+                  };
+                  disturbancesOpenSundsvallOstra += 1;
+                }
+                break;          
+              case "PLANNED":
+                disturbancesPlannedSundsvallOstra += 1;
+                break;          
+              default:
+                break;
+            }
+          }
+          if (getPoints) {
+            arrGeojson.push({
+              category: category[disturbance.category],
+              status: status[disturbance.status],
+              properties: disturbance.title
+            });
           }
         }
-        if (ptsWithinCentrumAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedCentrumAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersCentrumAlnon += 1;
-              if (!(disturbance.id in disturbancesCentrumAlnon)) {
-                disturbancesCentrumAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenCentrumAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedCentrumAlnon += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSydvastraAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSydvastraAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSydvastraAlnon += 1;
-              if (!(disturbance.id in disturbancesSydvastraAlnon)) {
-                disturbancesSydvastraAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSydvastraAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSydvastraAlnon += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSydostraAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSydostraAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSydostraAlnon += 1;
-              if (!(disturbance.id in disturbancesSydostraAlnon)) {
-                disturbancesSydostraAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSydostraAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSydostraAlnon += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinNordostraAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedNordostraAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersNordostraAlnon += 1;
-              if (!(disturbance.id in disturbancesNordostraAlnon)) {
-                disturbancesNordostraAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenNordostraAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedNordostraAlnon += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinNordvastraAlnon.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedNordvastraAlnon += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersNordvastraAlnon += 1;
-              if (!(disturbance.id in disturbancesNordvastraAlnon)) {
-                disturbancesNordvastraAlnon[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenNordvastraAlnon += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedNordvastraAlnon += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSundsvallFastland.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSundsvallFastland += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSundsvallFastland += 1;
-              if (!(disturbance.id in disturbancesSundsvallFastland)) {
-                disturbancesSundsvallFastland[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSundsvallFastland += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSundsvallFastland += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSundsvallSodra.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSundsvallSodra += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSundsvallSodra += 1;
-              if (!(disturbance.id in disturbancesSundsvallSodra)) {
-                disturbancesSundsvallSodra[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSundsvallSodra += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSundsvallSodra += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSundsvallNorra.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSundsvallNorra += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSundsvallNorra += 1;
-              if (!(disturbance.id in disturbancesSundsvallNorra)) {
-                disturbancesSundsvallNorra[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSundsvallNorra += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSundsvallNorra += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSundsvallVastra.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSundsvallVastra += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSundsvallVastra += 1;
-              if (!(disturbance.id in disturbancesSundsvallVastra)) {
-                disturbancesSundsvallVastra[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSundsvallVastra += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSundsvallVastra += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (ptsWithinSundsvallOstra.features.length > 0) {
-          switch (disturbance.status) {
-            case "CLOSED":
-              disturbancesClosedSundsvallOstra += 1;
-              break;          
-            case "OPEN":
-              affectedCustomersSundsvallOstra += 1;
-              if (!(disturbance.id in disturbancesSundsvallOstra)) {
-                disturbancesSundsvallOstra[disturbance.id] = {
-                  id: disturbance.id, 
-                  category: disturbance.category, 
-                  status: disturbance.status, 
-                  title: disturbance.title, 
-                  description: disturbance.description, 
-                  plannedStartDate: disturbance.plannedStartDate, 
-                  plannedStopDate: disturbance.plannedStopDate, 
-                  created: disturbance.created, 
-                  updated: disturbance.updated
-                };
-                disturbancesOpenSundsvallOstra += 1;
-              }
-              break;          
-            case "PLANNED":
-              disturbancesPlannedSundsvallOstra += 1;
-              break;          
-            default:
-              break;
-          }
-        }
-        if (getPoints) {
-          arrGeojson.push({
-            category: category[disturbance.category],
-            status: status[disturbance.status],
-            properties: disturbance.title
-          });
-        }
-      }
-    });
-  });
-  /*
+      });
+    });    
+  }
+/*
   arrGeojson.push({
     type: 'Feature',
     geometry: polyAlnon['geometry'],
