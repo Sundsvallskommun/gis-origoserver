@@ -93,11 +93,19 @@ module.exports = convertToGeojson;
 
 function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter) {
   // Setup the search call and wait for result
-  const options = {
+  let options = {
     url: encodeURI(configOptions.url),
     method: 'GET',
     json: false  // Automatically parses the JSON string in the response set to true
   }
+  if (typeof configOptions.headers !== 'undefined') {
+    options = {
+      url: encodeURI(configOptions.url),
+      method: 'GET',
+      json: false,  // Automatically parses the JSON string in the response set to true
+      headers: configOptions.headers
+    }
+  } 
 
   if(configOptions.type === 'mysql'){
     var con = mysql.createConnection({
@@ -197,6 +205,13 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
          geometries: tempGeometries
       }
       hasGeometry = true;
+    } else if ("GeoJSON" === configOptions.geometry_format) {
+      if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
+        tempEntity['geometry'] = entity[configOptions.geometry];
+        hasGeometry = true;
+      } else {
+        hasGeometry = false;
+      }
     }
     configOptions.properties.forEach((property) => {
       if (configOptions.onlyUseLastPartOfNestedPropname) {
