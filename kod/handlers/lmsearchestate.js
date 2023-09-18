@@ -131,10 +131,12 @@ const lmGetEstateFromPoint = async (req, res) => {
 
       if (typeof fnrObjektidentitet === 'undefined') {
         // fnr is undefined do nothing
-      } else {
-        if (typeof fnrObjektidentitet !== '') {
+    } else {
+        if (fnrObjektidentitet !== '') {
           req.url = req.url + '&fnr=' + fnrObjektidentitet;
           lmGetEstate(req, res, type);
+        } else {
+          res.send({error: 'Hittar ingen fastighet'});
         }
       }
     } else {
@@ -436,7 +438,6 @@ async function doGetEstateNumberAsyncCall(configOptions, easting, northing) {
       },
       json: true // Automatically parses the JSON string in the response
   }
-
   promiseArray.push(rp(options)
     .then(function (parsedBody) {
       concatEstateNumberResult(parsedBody);
@@ -450,7 +451,7 @@ async function doGetEstateNumberAsyncCall(configOptions, easting, northing) {
   await Promise.all(promiseArray)
     .then(function (returnValue) {
         // The result has been handled in concatEstateNumberResult()
-    })
+      })
     .catch(function (err) {
         // If fail return empty array
         fnrObjektidentitet = '';
