@@ -175,10 +175,11 @@ function concatResult(feature) {
             geometryEnhetsomrade.push(oneFeature);
           } else {
             const centerPoint = {};
-            centerPoint['geometry'] = {
+            const registerenhetsomradeGeometry = [];
+            /*centerPoint['geometry'] = {
               coordinates: element.properties.registerenhetsomrade[0].centralpunktskoordinat.coordinates,
               type: element.properties.registerenhetsomrade[0].centralpunktskoordinat.type
-            };
+            };*/
             centerPoint['properties'] = {
               name: registeromrade + ' ' + beteckning + ' ' + enhet,
               objektidentitet: objektidentitet,
@@ -187,8 +188,40 @@ function concatResult(feature) {
               samfallighetsattribut
             };
             centerPoint['type'] = 'Feature';
-            geometryEnhetsomrade.push(centerPoint);
-          }
+            element.properties.registerenhetsomrade.forEach((omrade) => {
+              if (typeof omrade.yta !== 'undefined') {                
+                const registerenhetsomradeYta = {};
+                registerenhetsomradeYta['geometry'] = omrade.yta;
+                registerenhetsomradeYta['properties'] = {
+                  name: registeromrade + ' ' + beteckning + ' ' + enhet,
+                  objektidentitet: objektidentitet,
+                  typ,
+                  fastighetsattribut,
+                  samfallighetsattribut
+                };
+                registerenhetsomradeYta['type'] = 'Feature';
+                registerenhetsomradeGeometry.push(registerenhetsomradeYta);
+              } else if (typeof omrade.centralpunktskoordinat !== 'undefined') {
+                const registerenhetsomradePunkt = {};
+                registerenhetsomradePunkt['geometry'] = omrade.centralpunktskoordinat;
+                registerenhetsomradePunkt['properties'] = {
+                  name: registeromrade + ' ' + beteckning + ' ' + enhet,
+                  objektidentitet: objektidentitet,
+                  typ,
+                  fastighetsattribut,
+                  samfallighetsattribut
+                };
+                registerenhetsomradePunkt['type'] = 'Feature';
+                registerenhetsomradeGeometry.push(registerenhetsomradePunkt);
+              }
+
+            })
+            if (registerenhetsomradeGeometry.length == 1) {
+              geometryEnhetsomrade.push(registerenhetsomradeGeometry[0]);
+            } else {
+              result['features'] = registerenhetsomradeGeometry;
+            }
+           }
         })
       }
     })
