@@ -253,7 +253,13 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
       if (excludeOn !== '') {
         //console.log('excludeValue1 ' + excludeValue);
         //console.log('excludeValue2 ' + getAttribute(entity, excludeOn));
-        if (String(excludeValue) == String(getAttribute(entity, excludeOn)) ){
+        if (Array.isArray(excludeValue)) {
+          excludeValue.forEach((value) => {
+            if (String(value) == String(getAttribute(entity, excludeOn)) ){
+              pushEntity = false;
+            }
+          });
+        } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) ){
           pushEntity = false;
         }
       }
