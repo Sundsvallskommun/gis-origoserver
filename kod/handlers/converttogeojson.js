@@ -18,6 +18,7 @@ var filterOn = '';
 var filterValue = '';
 var excludeOn = '';
 var excludeValue = '';
+var excludeType = 'equal';
 var filter = '';
 var dateFilter = '';
 
@@ -77,8 +78,11 @@ const convertToGeojson = async (req, res) => {
           excludeOn = convert.excludeOn;
           excludeValue = convert.excludeValue;
         }
+        if (typeof convert.excludeType !== 'undefined' || convert.excludeType !== null) {
+          excludeType = convert.excludeType;
+        }
       if (q === convert.name) {
-          doGet(req, res, convert, convert.crs || srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter);
+          doGet(req, res, convert, convert.crs || srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter);
         }
       });
     } else {
@@ -91,7 +95,7 @@ const convertToGeojson = async (req, res) => {
 // Export the module
 module.exports = convertToGeojson;
 
-function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter) {
+function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter) {
   // Setup the search call and wait for result
   let options = {
     url: encodeURI(configOptions.url),
@@ -124,7 +128,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
 
     con.query(`select * from ${configOptions.table}`, function (err, results) {
     if (err) throw err;
-    res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter));
+    res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
   });
   } else {
     var chunks = [];
@@ -141,9 +145,9 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
         body = JSON.parse(bodyWithCorrectEncoding);
       }
       if (configOptions.arrayOfObjects === null) {
-        res.send(createGeojson(body, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue));
+        res.send(createGeojson(body, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType));
       } else {
-        res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter));
+        res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
       }
     })
     .catch(function (err) {
@@ -154,7 +158,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
   }
 }
 
-function createGeojson(entities, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, dateFilter) {
+function createGeojson(entities, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter) {
   const result = {};
   let features = [];
   result['type'] = 'FeatureCollection';
@@ -251,15 +255,15 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
         }
       }
       if (excludeOn !== '') {
-        //console.log('excludeValue1 ' + excludeValue);
-        //console.log('excludeValue2 ' + getAttribute(entity, excludeOn));
         if (Array.isArray(excludeValue)) {
           excludeValue.forEach((value) => {
             if (String(value) == String(getAttribute(entity, excludeOn)) ){
               pushEntity = false;
             }
           });
-        } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) ){
+        } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) && excludeType === 'equal' ){
+          pushEntity = false;
+        } else if (Date.parse(getAttribute(entity, excludeOn).replaceAll('"', '')) < (Date.now() + excludeValue) && excludeType === 'timeMiliseconds' ){
           pushEntity = false;
         }
       }
