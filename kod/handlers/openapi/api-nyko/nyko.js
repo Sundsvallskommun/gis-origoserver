@@ -66,7 +66,6 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
         sqlWomen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'K';";
         sqlMen = "SELECT SUM([AntalPersoner]) FROM [EDW].[api_webbkarta].[vBefolkningArNyko6] where [NYKO] like '" + nyko + "%'  and [Uttagsdatum] = '" + uttag + "' and [Kon] = 'M';";
         sqlVariabels = "SELECT * FROM [EDW].[mart_scb].[vSocioekonomiskStatistik] WHERE [NYKO] = '2281" + nyko + "'";
-        console.log(sqlVariabels);
 
         requestAgeInterval = new Request(sqlInterval, function(err) {
         if (err) {
@@ -127,8 +126,6 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
           let total = '';
 
           columns.forEach((column) => {
-            console.log('column');
-            console.log(column);
             if (column.metadata.colName === 'Variabel') {
               variable = column.value;
             } else if (column.metadata.colName === 'Ar') {
@@ -153,7 +150,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
             varAndelArbetande.push({ year, men, women, total })
           } else if (variable === 'Andel med eftergymnasial utbildning 20-64 år') {
             varAndelUtbildade.push({ year, men, women, total })
-          } else if (variable === 'Andel öppet arbetslösa 16-64 år') {
+          } else if (variable === 'Andel öppet arbetslösa 18-64 år') {
             varAndelArbetslosa.push({ year, men, women, total })
           } else if (variable === 'Inkomst (median) tusentals kronor 20+ år') {
             varInkomst.push({ year, men, women, total })
