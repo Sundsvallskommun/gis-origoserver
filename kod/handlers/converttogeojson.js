@@ -256,11 +256,15 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
       }
       if (excludeOn !== '') {
         if (Array.isArray(excludeValue)) {
+          let foundExclude = false;
           excludeValue.forEach((value) => {
             if (String(value) == String(getAttribute(entity, excludeOn)) ){
-              pushEntity = false;
+              foundExclude = true;
             }
           });
+          if (foundExclude) {
+            pushEntity = false;
+          }
         } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) && excludeType === 'equal' ){
           pushEntity = false;
         } else if (Date.parse(getAttribute(entity, excludeOn).replaceAll('"', '')) < (Date.now() + excludeValue) && excludeType === 'timeMiliseconds' ){

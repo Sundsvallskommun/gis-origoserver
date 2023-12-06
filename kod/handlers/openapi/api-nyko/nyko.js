@@ -45,6 +45,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
       function executeStatement(nyko, uttagsdatum, interval, res) {
         let men = '';
         let women = '';
+        let name = '';
         let ageInterval = [];
         let outtakeDate = [];
         let uttag = uttagsdatum;
@@ -136,6 +137,10 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
               women = column.value;
             } else if (column.metadata.colName === 'Totalt') {
               total = column.value;
+            } else if (column.metadata.colName === 'Namn') {
+              if (column.value) {
+                name = column.value;
+              }
             }
           });
           if (variable === 'Andel av befolkningen med ekonomiskt bistånd 20+ år') {
@@ -158,7 +163,6 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
             varOhalsa.push({ year, men, women, total })
           }
         });
-
         requestVariables.on('done', function(rowCount, more) {
           console.log(rowCount + ' rows returned');
         });
@@ -213,7 +217,7 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
             ageInterval = [];
           }
           if ((parseInt(men) + parseInt(women)) >= 3) {
-            res.status(200).json({ men: men, women: women, ageByInterval: ageInterval, outtakeDate: uttagsdatum, variables: variables });
+            res.status(200).json({ name: name,  men: men, women: women, ageByInterval: ageInterval, outtakeDate: uttagsdatum, variables: variables });
           } else {
             res.status(200).json({error: 'Ingen statistik visas, befolkningen mindre eller lika med 3!'});
           }
