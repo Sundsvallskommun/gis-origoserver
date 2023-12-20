@@ -51,8 +51,9 @@ proxy.on('proxyReq', (proxyReq, req, res) => {
     const page = `${targetPath}${path}`;
     proxyPath = page;
   }
-proxyReq.path = proxyPath;
+  proxyReq.path = proxyPath;
 
+  res.removeHeader('Access-Control-Allow-Origin');
   // Set the proxy request headers
   proxyReq.setHeader('Authorization', `Bearer ${token}`, ' scope', `${scope}`);
 });
