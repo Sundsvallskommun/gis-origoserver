@@ -25,11 +25,14 @@ var oauth2proxy = require('../handlers/oauth2proxy');
 var apiContract = require('../handlers/apiContract');
 var lmBuilding = require('../handlers/lmbuilding');
 var iotTemp = require('../handlers/iottemp');
+var ldapProxy = require('../handlers/ldapproxy');
 var befStat = require('../handlers/befstat');
 var cascadeWMS = require('../handlers/cascadewms');
 var auth = require('../handlers/auth');
 var clients = require('../handlers/clients');
 var disturbances = require('../handlers/disturbances');
+var getImage = require('../handlers/getimage');
+var fbwebbProxy = require('../handlers/fbwebbproxy');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -61,10 +64,13 @@ router.all('/oauth2proxy/*', oauth2proxy);
 router.all('/apicontract/getcontract/*', apiContract['getContract']);
 router.all('/apicontract/getallcontracts/*', apiContract['getAllContracts']);
 router.all('/iottemp', iotTemp);
+router.all('/ldapproxy/*', ldapProxy);
 router.all('/befstat', befStat);
 router.all('/cascadewms/*', cascadeWMS);
 router.use('/auth', auth);
 router.use('/clients', clients);
 router.all('/disturbances', disturbances);
+router.all('/getimage', getImage);
+router.all('/fbwebbproxy/*', fbwebbProxy);
 
 module.exports = router;
