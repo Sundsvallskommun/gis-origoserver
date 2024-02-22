@@ -176,46 +176,49 @@ function concatResult(feature) {
           } else {
             const centerPoint = {};
             const registerenhetsomradeGeometry = [];
-            /*centerPoint['geometry'] = {
-              coordinates: element.properties.registerenhetsomrade[0].centralpunktskoordinat.coordinates,
-              type: element.properties.registerenhetsomrade[0].centralpunktskoordinat.type
-            };*/
-            centerPoint['properties'] = {
-              name: registeromrade + ' ' + beteckning + ' ' + enhet,
-              objektidentitet: objektidentitet,
-              typ,
-              fastighetsattribut,
-              samfallighetsattribut
-            };
-            centerPoint['type'] = 'Feature';
-            element.properties.registerenhetsomrade.forEach((omrade) => {
-              if (typeof omrade.yta !== 'undefined') {                
-                const registerenhetsomradeYta = {};
-                registerenhetsomradeYta['geometry'] = omrade.yta;
-                registerenhetsomradeYta['properties'] = {
-                  name: registeromrade + ' ' + beteckning + ' ' + enhet,
-                  objektidentitet: objektidentitet,
-                  typ,
-                  fastighetsattribut,
-                  samfallighetsattribut
-                };
-                registerenhetsomradeYta['type'] = 'Feature';
-                registerenhetsomradeGeometry.push(registerenhetsomradeYta);
-              } else if (typeof omrade.centralpunktskoordinat !== 'undefined') {
-                const registerenhetsomradePunkt = {};
-                registerenhetsomradePunkt['geometry'] = omrade.centralpunktskoordinat;
-                registerenhetsomradePunkt['properties'] = {
-                  name: registeromrade + ' ' + beteckning + ' ' + enhet,
-                  objektidentitet: objektidentitet,
-                  typ,
-                  fastighetsattribut,
-                  samfallighetsattribut
-                };
-                registerenhetsomradePunkt['type'] = 'Feature';
-                registerenhetsomradeGeometry.push(registerenhetsomradePunkt);
-              }
+            // Don't add this area, since it's waiting to get coordinates
+            if (!('koordinatbevakningAKRA' in enhetsomrade)) {                
+              centerPoint['properties'] = {
+                name: registeromrade + ' ' + beteckning + ' ' + enhet,
+                objektidentitet: objektidentitet,
+                typ,
+                fastighetsattribut,
+                samfallighetsattribut
+              };
+              centerPoint['type'] = 'Feature';
+              element.properties.registerenhetsomrade.forEach((omrade) => {
+                if (typeof omrade.yta !== 'undefined') {
+                    const registerenhetsomradeYta = {};
+                    if (Array.isArray(omrade.yta)) {
+                      registerenhetsomradeYta['geometry'] = omrade.yta[0];
+                    } else {
+                      registerenhetsomradeYta['geometry'] = omrade.yta;
+                    }
+                    registerenhetsomradeYta['properties'] = {
+                      name: registeromrade + ' ' + beteckning + ' ' + enhet,
+                      objektidentitet: objektidentitet,
+                      typ,
+                      fastighetsattribut,
+                      samfallighetsattribut
+                    };
+                    registerenhetsomradeYta['type'] = 'Feature';
+                    registerenhetsomradeGeometry.push(registerenhetsomradeYta);
+                } else if (typeof omrade.centralpunktskoordinat !== 'undefined') {
+                  const registerenhetsomradePunkt = {};
+                  registerenhetsomradePunkt['geometry'] = omrade.centralpunktskoordinat;
+                  registerenhetsomradePunkt['properties'] = {
+                    name: registeromrade + ' ' + beteckning + ' ' + enhet,
+                    objektidentitet: objektidentitet,
+                    typ,
+                    fastighetsattribut,
+                    samfallighetsattribut
+                  };
+                  registerenhetsomradePunkt['type'] = 'Feature';
+                  registerenhetsomradeGeometry.push(registerenhetsomradePunkt);
+                }
 
-            })
+              })
+            }
             if (registerenhetsomradeGeometry.length == 1) {
               geometryEnhetsomrade.push(registerenhetsomradeGeometry[0]);
             } else {
