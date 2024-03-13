@@ -1,7 +1,7 @@
 var express = require('express');
 var path = require('path');
 var bodyParser = require('body-parser');
-var cors = require('cors')
+var cors = require('cors');
 const rateLimit = require('express-rate-limit');
 var openapi = require('express-openapi');
 var path = require('path');
@@ -59,6 +59,7 @@ openapi.initialize({
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
 		path.resolve(__dirname, 'handlers/openapi/api-nyko'),
 		path.resolve(__dirname, 'handlers/openapi/api-precheck'),
+		path.resolve(__dirname, 'handlers/openapi/api-estate'),
     //path.resolve(__dirname, 'handlers/openapi/api-routes2'),
   ],
 });
