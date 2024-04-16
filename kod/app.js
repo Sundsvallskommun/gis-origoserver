@@ -64,6 +64,14 @@ openapi.initialize({
   ],
 });
 
+openapi.initialize({
+  apiDoc: require('./handlers/openapitest/api-doc.js'),
+  app: app,
+  paths: [
+		path.resolve(__dirname, 'handlers/openapitest/api-estate'),
+  ],
+});
+
 var server = app.listen(3001, function () {
   var host = server.address().address
   var port = server.address().port
