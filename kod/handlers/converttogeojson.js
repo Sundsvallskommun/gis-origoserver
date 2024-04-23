@@ -7,6 +7,7 @@ const wkt = require('wkt');
 const { parse } = require('wkt');
 var iconv = require('iconv-lite');
 var mysql = require('mysql');
+const { Client } = require('pg');
 
 var objectIds;
 var username;
@@ -127,9 +128,46 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
     });
 
     con.query(`select * from ${configOptions.table}`, function (err, results) {
-    if (err) throw err;
-    res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
-  });
+      if (err) throw err;
+      res.send(createGeojson(results, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
+    });
+  } else if(configOptions.type === 'postgres'){
+    const client = new Client({
+      user: configOptions.user,
+      password: configOptions.password,
+      host: configOptions.server,
+      port: configOptions.port,
+      database: configOptions.database,
+    });
+  // Connect to the database
+  client
+    .connect()
+    .then(() => {
+      let sqlQuery = `SELECT ${configOptions.properties.join()}, ST_AsGeoJSON(${configOptions.geometry})::jsonb as geojson FROM ${configOptions.schema}."${configOptions.table}"`;
+      client.query(sqlQuery, (err, result) => {
+        if (err) {
+          console.error('Error executing query', err);
+          res.sendStatus(500);
+        } else {
+          res.send(createGeojson(result.rows, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
+        }
+
+        // Close the connection when done
+        client
+          .end()
+          .then(() => {
+            console.log('Connection to PostgreSQL closed');
+          })
+          .catch((err) => {
+            console.error('Error closing connection', err);
+            res.sendStatus(500);
+          });
+      });
+    })
+    .catch((err) => {
+      console.error('Error connecting to PostgreSQL database', err);
+      res.sendStatus(500);
+    });
   } else {
     var chunks = [];
     rp(options)
@@ -212,6 +250,13 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
     } else if ("GeoJSON" === configOptions.geometry_format) {
       if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
         tempEntity['geometry'] = entity[configOptions.geometry];
+        hasGeometry = true;
+      } else {
+        hasGeometry = false;
+      }
+    } else if ("Geometry" === configOptions.geometry_format) {
+      if (typeof entity['geojson'] !== 'undefined' && entity['geojson'] !== null) {
+        tempEntity['geometry'] = entity['geojson'];
         hasGeometry = true;
       } else {
         hasGeometry = false;
