@@ -215,13 +215,17 @@ async function doGet(req, res, objectidentifier) {
                   });
                 }
                 let purchasePrice = {};
-                if ('kopeskilling' in change) {                  
-                  purchasePrice = {
-                    objectidentifier: change.kopeskilling.objektidentitet,
-                    purchasePriceImmovableProperty: { 
+                if ('kopeskilling' in change) {      
+                  let purchasePriceImmovableProperty = {};       
+                  if ('kopeskillingFastEgendom' in change.kopeskilling) {    
+                    purchasePriceImmovableProperty = { 
                       currency: change.kopeskilling.kopeskillingFastEgendom.valuta,
                       sum: change.kopeskilling.kopeskillingFastEgendom.summa
-                    },
+                    };
+                  }      
+                  purchasePrice = {
+                    objectidentifier: change.kopeskilling.objektidentitet,
+                    purchasePriceImmovableProperty,
                     purchasePriceType: change.kopeskilling.kopeskillingstyp
                   };
                 }

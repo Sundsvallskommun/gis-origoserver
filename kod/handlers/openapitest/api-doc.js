@@ -15,7 +15,20 @@ module.exports = {
   },
 
   definitions: {
-    EstateSearchResponse: {
+    EstateDesignationResponse: {
+      type: 'object',
+      properties: {
+        designation: {
+          description: 'The designation of the estate.',
+          type: 'string'
+        },
+        objectidentifier: {
+          description: 'The unique identifier of the estate.',
+          type: 'string'
+        }
+      }
+    },
+    EstateAddressResponse: {
       type: 'object',
       properties: {
         address: {
