@@ -11,13 +11,12 @@ async function doGet(req, res, address) {
   configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   const responseArray = []
-  
   var token = await simpleStorage.getToken(configOptions);
 
   if (address !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=' + address + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=sundsvall ' + address + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -48,6 +47,7 @@ async function doGet(req, res, address) {
               objectidentifier: element.properties.registerenhetsreferens.objektidentitet
             });
           });
+          responseArray.sort((a,b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
           res.status(200).json(responseArray);
         });    
       } else {
@@ -149,7 +149,7 @@ module.exports = {
         schema: {
             type: 'array',
             items: {
-              $ref: '#/definitions/EstateSearchResponse'
+              $ref: '#/definitions/EstateAddressResponse'
             }
           },
       },

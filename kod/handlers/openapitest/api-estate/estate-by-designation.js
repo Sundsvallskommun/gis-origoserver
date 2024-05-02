@@ -17,11 +17,11 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
   configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   var tokenAdress = await simpleStorage.getToken(configOptions);
-  
+ 
   if (designation !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=Sundsvall ' + designation + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -31,8 +31,16 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
       const registerenhetIdArr = [];
       if (req1.data.length > 0) {
         req1.data.forEach(element => {
-          registerenhetIdArr.push(element.registerenhet);
+          responseArray.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
         });
+        responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+        res.status(200).json(responseArray);  
+        /* req1.data.forEach(element => {
+          if (typeof element.registerenhet !== 'undefined') {
+            registerenhetIdArr.push(element.registerenhet);
+          }          
+        });
+        console.log('After push' + new Date().toISOString());
         Promise.all([axios({
           method: 'POST',
           url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
@@ -43,6 +51,7 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
            },
            data: registerenhetIdArr
         })]).then(([reqPost]) => {
+          console.log('After registerenhet' + new Date().toISOString());
           reqPost.data.features.forEach(element => {
             const addressObj = concatAddress(element);
             responseArray.push({ 
@@ -51,8 +60,9 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
               objectidentifier: element.properties.registerenhetsreferens.objektidentitet
             });
           });
+          responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
           res.status(200).json(responseArray);
-        });    
+        });    */
       } else {
         res.status(200).json(responseArray);
       }
@@ -156,7 +166,7 @@ module.exports.get.apiDoc = {
       schema: {
           type: 'array',
           items: {
-            $ref: '#/definitions/EstateSearchResponse'
+            $ref: '#/definitions/EstateDesignationResponse'
           }
         },
     },
