@@ -59,13 +59,20 @@ openapi.initialize({
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
 		path.resolve(__dirname, 'handlers/openapi/api-nyko'),
 		path.resolve(__dirname, 'handlers/openapi/api-precheck'),
-		path.resolve(__dirname, 'handlers/openapi/api-estate'),
     //path.resolve(__dirname, 'handlers/openapi/api-routes2'),
   ],
 });
 
 openapi.initialize({
-  apiDoc: require('./handlers/openapitest/api-doc.js'),
+  apiDoc: require('./handlers/openapi/api-estate/api-doc.js'),
+  app: app,
+  paths: [
+		path.resolve(__dirname, 'handlers/openapi/api-estate'),
+  ],
+});
+
+openapi.initialize({
+  apiDoc: require('./handlers/openapitest/api-estate/api-doc.js'),
   app: app,
   paths: [
 		path.resolve(__dirname, 'handlers/openapitest/api-estate'),

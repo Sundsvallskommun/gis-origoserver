@@ -4,6 +4,8 @@ const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstate';
+const regex = /^[a-zA-ZäöåÄÖÅ0-9:, ]+$/;
+const regexNumbers = /^[0-9]+$/;
 
 async function doGet(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
@@ -12,25 +14,91 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
   const responseArray = []
   
   var token = await simpleStorage.getToken(configOptions);
-  
+  configOptions.scope = configOptions.scope_address;
+  configOptions.type = 'address';
+  var tokenAdress = await simpleStorage.getToken(configOptions);
+ 
   if (designation !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=Sundsvall ' + designation + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
         'scope': `${configOptions.scope}`
         }
     })]).then(([req1]) => {
-      req1.data.forEach(element => {
-        responseArray.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
-      });
-      res.status(200).json(responseArray);
+      const registerenhetIdArr = [];
+      if (req1.data.length > 0) {
+        req1.data.forEach(element => {
+          responseArray.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
+        });
+        responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+        res.status(200).json(responseArray);  
+        /* req1.data.forEach(element => {
+          if (typeof element.registerenhet !== 'undefined') {
+            registerenhetIdArr.push(element.registerenhet);
+          }          
+        });
+        console.log('After push' + new Date().toISOString());
+        Promise.all([axios({
+          method: 'POST',
+          url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
+          headers: {
+            'Authorization': 'Bearer ' + tokenAdress,
+            'content-type': 'application/json',
+            'scope': `${configOptions.scope_address}`
+           },
+           data: registerenhetIdArr
+        })]).then(([reqPost]) => {
+          console.log('After registerenhet' + new Date().toISOString());
+          reqPost.data.features.forEach(element => {
+            const addressObj = concatAddress(element);
+            responseArray.push({ 
+              address: addressObj.adress, 
+              designation: addressObj.registerenhetsreferensBeteckning, 
+              objectidentifier: element.properties.registerenhetsreferens.objektidentitet
+            });
+          });
+          responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+          res.status(200).json(responseArray);
+        });    */
+      } else {
+        res.status(200).json(responseArray);
+      }
     });
   } else {
     res.status(400).json({error: 'Missing required parameter designation'});
   }
+}
+
+function concatAddress(feature) {
+  let adress = {};
+
+  if ('id' in feature) {
+    adress['objektidentitet'] = feature.properties.objektidentitet;
+    adress['kommun'] = feature.properties.adressomrade.kommundel.kommun;
+    const faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    const adressplatsnummer = feature.properties.adressplatsattribut.adressplatsbeteckning.adressplatsnummer || '';
+    const bokstavstillagg = feature.properties.adressplatsattribut.adressplatsbeteckning.bokstavstillagg || '';
+    let popularnamn = '';
+    if ('adressplatsnamn' in feature.properties) {
+      if ('popularnamn' in feature.properties.adressplatsnamn) {
+        popularnamn = feature.properties.adressplatsnamn.popularnamn;
+      }
+    }
+    adress['adress'] = faststalltNamn + ' ' + adressplatsnummer + bokstavstillagg + ', ' + feature.properties.adressplatsattribut.postort;
+    adress['popularnamn'] = popularnamn;
+    adress['faststalltNamn'] = faststalltNamn;
+    adress['adressplatsnummer'] = adressplatsnummer;
+    adress['bokstavstillagg'] = bokstavstillagg;
+    adress['postnummer'] = feature.properties.adressplatsattribut.postnummer;
+    adress['postort'] = feature.properties.adressplatsattribut.postort;
+    adress['adressplatspunkt'] = feature.properties.adressplatsattribut.adressplatspunkt;
+    adress['registerenhetsreferensBeteckning'] = feature.properties.registerenhetsreferens.beteckning;
+    adress['registerenhetsreferensObjektidentitet'] = feature.properties.registerenhetsreferens.objektidentitet;
+  }
+  return adress;
 }
 
 module.exports = {
@@ -43,16 +111,26 @@ module.exports = {
       statusDesignation = 'gällande';
     }
     if ('maxHits' in parsedUrl.query) {
-      maxHits = parsedUrl.query.maxHits;
+      if (parsedUrl.query.maxHits.match(regexNumbers) !== null) {
+        maxHits = parsedUrl.query.maxHits;
+      } else {
+        maxHits = '100';
+      }     
     } else {
       maxHits = '100';
     }
     if ('designation' in parsedUrl.query) {
-      designation = parsedUrl.query.designation;
+      if (parsedUrl.query.designation.match(regex) !== null) {
+        designation = parsedUrl.query.designation;     
+      } else {
+        res.status(400).json({error: 'Invalid in parameter address'});
+      }    
     } else {
       res.status(400).json({error: 'Missing required parameter designation'});
     }
-    doGet(req, res, designation, statusDesignation, maxHits);
+    if (designation.length > 0) {
+      doGet(req, res, designation, statusDesignation, maxHits);
+    }    
   },
 };
   
@@ -64,7 +142,22 @@ module.exports.get.apiDoc = {
         in: 'query',
         name: 'designation',
         required: true,
-        type: 'string'
+        type: 'string',
+        description: 'An designation to search for (starts with).'
+      },
+      {
+        in: 'query',
+        name: 'maxHits',
+        required: false,
+        type: 'string',
+        description: 'The maximal number of hits returned. Defaults to 100.'
+      },
+      {
+        in: 'query',
+        name: 'status',
+        required: false,
+        type: 'string',
+        description: 'The status of the estate. Defaults to "gällande".'
       }
   ],
   responses: {
@@ -73,7 +166,7 @@ module.exports.get.apiDoc = {
       schema: {
           type: 'array',
           items: {
-            $ref: '#/definitions/EstateDesignationId'
+            $ref: '#/definitions/EstateDesignationResponse'
           }
         },
     },

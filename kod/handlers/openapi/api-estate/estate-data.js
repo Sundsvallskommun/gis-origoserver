@@ -47,6 +47,12 @@ async function doGet(req, res, objectidentifier) {
             if ('agande' in reqOwner.data.features[0].properties) {
               reqOwner.data.features[0].properties.agande.forEach(lagfart => {
                 let ownernName = '';
+                let versionValidFrom = '';
+                let enrollmentDay = '';
+                let address = '';
+                let postalCode = '';
+                let city = '';
+                let coAddress = '';
                 if ('fornamn' in lagfart.agare) {
                   ownernName = lagfart.agare.fornamn + ' ';
                 }
@@ -55,26 +61,98 @@ async function doGet(req, res, objectidentifier) {
                 }
                 if ('organisationsnamn' in lagfart.agare) {
                   ownernName = lagfart.agare.organisationsnamn;
+                }
+                if ('person' in lagfart.agare) {
+                  if ('adress' in lagfart.agare.person) {
+                    if ('coAdress' in lagfart.agare.person.adress) {
+                      coAddress = lagfart.agare.person.adress.coAdress;
+                    }
+                    if ('utdelningsadress2' in lagfart.agare.person.adress) {
+                      address = lagfart.agare.person.adress.utdelningsadress2;
+                    }
+                    if ('postnummer' in lagfart.agare.person.adress) {
+                      postalCode = lagfart.agare.person.adress.postnummer;
+                    }
+                    if ('postort' in lagfart.agare.person.adress) {
+                      city = lagfart.agare.person.adress.postort;
+                    }
+                  }
+                }
+                if ('organisation' in lagfart.agare) {
+                  if ('adress' in lagfart.agare.organisation) {
+                    if ('coAdress' in lagfart.agare.organisation.adress) {
+                      coAddress = lagfart.agare.organisation.adress.coAdress;
+                    }
+                    if ('utdelningsadress2' in lagfart.agare.organisation.adress) {
+                      address = lagfart.agare.organisation.adress.utdelningsadress2;
+                    }
+                    if ('postnummer' in lagfart.agare.organisation.adress) {
+                      postalCode = lagfart.agare.organisation.adress.postnummer;
+                    }
+                    if ('postort' in lagfart.agare.organisation.adress) {
+                      city = lagfart.agare.organisation.adress.postort;
+                    }
+                  }
+                }
+                if ('versionGiltigFran' in lagfart) {
+                  versionValidFrom = lagfart.versionGiltigFran;
+                }
+                if ('inskrivningsdag' in lagfart) {
+                  enrollmentDay = lagfart.inskrivningsdag;
+                }
+                let share = '';
+                if ('beviljadAndel' in lagfart) {
+                  share = lagfart.beviljadAndel.taljare + '/' + lagfart.beviljadAndel.namnare;
                 }
                 ownershipArr.push({
                   type: lagfart.typ,
                   objectidentifier: lagfart.objektidentitet,
-                  enrollmentDay: lagfart.inskrivningsdag,
+                  enrollmentDay,
                   decision: lagfart.beslut,
-                  share: lagfart.beviljadAndel.taljare + '/' + lagfart.beviljadAndel.namnare,
+                  share,
                   diaryNumber: lagfart.dagboksnummer,
-                  versionValidFrom: lagfart.versionGiltigFran,
+                  versionValidFrom,
                   owner: {
                     idnumber: lagfart.agare.idnummer,
-                    name: ownernName
+                    name: ownernName,
+                    coAddress,
+                    address,
+                    postalCode,
+                    city
                   }
                 })
               });
             }
-            const previousOwnershipArr = [];
+            const mortageArr = [];
+            if ('belastar' in reqOwner.data.features[0].properties) {
+              reqOwner.data.features[0].properties.belastar.forEach(burdens => {
+                if (burdens.inskrivenBelastning.typ === 'Inteckning') {
+                  let enrollmentDay = '';
+                  if ('inskrivningsdag' in burdens.inskrivenBelastning) {
+                    enrollmentDay = burdens.inskrivenBelastning.inskrivningsdag;
+                  }
+                  mortageArr.push({
+                    objectidentifier: burdens.inskrivenBelastning.objektidentitet,
+                    type: burdens.inskrivenBelastning.typ,
+                    priorityOrder: burdens.foretradesordning,
+                    enrollmentDay,
+                    decision: burdens.inskrivenBelastning.beslut,
+                    diaryNumber: burdens.inskrivenBelastning.dagboksnummer,
+                    mortageType: burdens.inskrivenBelastning.pantbrevstyp,
+                    mortageAmount: { 
+                      currency: burdens.inskrivenBelastning.belopp.valuta,
+                      sum: burdens.inskrivenBelastning.belopp.summa
+                    }
+                  })
+                }
+              });
+            }
+           const previousOwnershipArr = [];
             if ('tidigareAgande' in reqOwner.data.features[0].properties) {
               reqOwner.data.features[0].properties.tidigareAgande.forEach(lagfart => {
                 let ownernName = '';
+                let versionValidFrom = '';
+                let enrollmentDay = '';
                 if ('fornamn' in lagfart.agare) {
                   ownernName = lagfart.agare.fornamn + ' ';
                 }
@@ -84,14 +162,24 @@ async function doGet(req, res, objectidentifier) {
                 if ('organisationsnamn' in lagfart.agare) {
                   ownernName = lagfart.agare.organisationsnamn;
                 }
+                if ('versionGiltigFran' in lagfart) {
+                  versionValidFrom = lagfart.versionGiltigFran;
+                }
+                if ('inskrivningsdag' in lagfart) {
+                  enrollmentDay = lagfart.inskrivningsdag;
+                }
+                let share = '';
+                if ('beviljadAndel' in lagfart) {
+                  share = lagfart.beviljadAndel.taljare + '/' + lagfart.beviljadAndel.namnare;
+                }
                 previousOwnershipArr.push({
                   type: lagfart.typ,
                   objectidentifier: lagfart.objektidentitet,
-                  enrollmentDay: lagfart.inskrivningsdag,
+                  enrollmentDay,
                   decision: lagfart.beslut,
-                  share: lagfart.beviljadAndel.taljare + '/' + lagfart.beviljadAndel.namnare,
+                  share,
                   diaryNumber: lagfart.dagboksnummer,
-                  versionValidFrom: lagfart.versionGiltigFran,
+                  versionValidFrom: versionValidFrom,
                   owner: {
                     idnumber: lagfart.agare.idnummer,
                     name: ownernName
@@ -105,12 +193,20 @@ async function doGet(req, res, objectidentifier) {
                 const acquisitionArr = [];
                 if ('fang' in change) {
                   change.fang.forEach(acquisition => {
+                    let fileNumber = '';
+                    if ('aktnummer' in acquisition) {
+                      fileNumber = acquisition.aktnummer;
+                    }
+                    let share = null;
+                    if ('andelFang' in acquisition) {
+                      share = acquisition.andelFang.taljare + '/' + acquisition.andelFang.namnare;
+                    }
                     acquisitionArr.push({
                       objectidentifier: acquisition.objektidentitet,
                       enrollmentDay: acquisition.inskrivningsdag,
-                      fileNumber: acquisition.aktnummer,
+                      fileNumber,
                       decision: acquisition.beslut,
-                      share: acquisition.andelFang.taljare + '/' + acquisition.andelFang.namnare,
+                      share,
                       acquisitionDay: acquisition.fangesdag,
                       acquisitionType: acquisition.fangesart,
                       acquisitionCode: acquisition.fangeskod,
@@ -119,22 +215,30 @@ async function doGet(req, res, objectidentifier) {
                   });
                 }
                 let purchasePrice = {};
-                if ('kopeskilling' in change) {                  
-                  purchasePrice = {
-                    objectidentifier: change.kopeskilling.objektidentitet,
-                    purchasePriceImmovableProperty: { 
+                if ('kopeskilling' in change) {      
+                  let purchasePriceImmovableProperty = {};       
+                  if ('kopeskillingFastEgendom' in change.kopeskilling) {    
+                    purchasePriceImmovableProperty = { 
                       currency: change.kopeskilling.kopeskillingFastEgendom.valuta,
                       sum: change.kopeskilling.kopeskillingFastEgendom.summa
-                    },
+                    };
+                  }      
+                  purchasePrice = {
+                    objectidentifier: change.kopeskilling.objektidentitet,
+                    purchasePriceImmovableProperty,
                     purchasePriceType: change.kopeskilling.kopeskillingstyp
                   };
                 }
                 const transferArr = [];
                 if ('overlatelse' in change) {
                   change.overlatelse.forEach(transfer => {
+                    let share = '';
+                    if ('andelOverlatelse' in transfer) {
+                      share = transfer.andelOverlatelse.taljare + '/' + transfer.andelOverlatelse.namnare;
+                    }
                     transferArr.push({
                       objectidentifier: transfer.objektidentitet,
-                      share: transfer.andelOverlatelse.taljare + '/' + transfer.andelOverlatelse.namnare,
+                      share,
                       registeredOwnership: transfer.inskrivetAgande
                     })
                   });
@@ -163,6 +267,7 @@ async function doGet(req, res, objectidentifier) {
               });
             }
             responseObj.ownership = ownershipArr;
+            responseObj.mortage = mortageArr;
             responseObj.previousOwnership = previousOwnershipArr;
             responseObj.actions = estateActionsArr;
             res.status(200).json(responseObj);
@@ -204,13 +309,11 @@ module.exports.get.apiDoc = {
   ],
   responses: {
     200: {
-      description: 'Responds with the title deeds and owner',
+      description: 'Responds with the title deeds and owner etc',
       schema: {
-          type: 'array',
-          items: {
-            $ref: '#/definitions/EstateData'
-          }
-        },
+        type: 'object',
+        $ref: '#/definitions/EstateData'
+      },
     },
     400: {
       description: 'Bad request',
