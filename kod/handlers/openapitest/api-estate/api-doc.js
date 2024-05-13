@@ -4,7 +4,7 @@ module.exports = {
   swagger: '2.0',
 
   // all routes will now have /api/v1 prefixed.
-  basePath: '/origoserver/api-test/v1',
+  basePath: '/origoserver/api-estate-test/v1',
 
   schemes: ['https'],
   

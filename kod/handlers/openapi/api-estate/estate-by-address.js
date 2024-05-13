@@ -4,19 +4,19 @@ const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstate';
+const regex = /^[a-zA-ZäöåÄÖÅ0-9, ]+$/;
 
 async function doGet(req, res, address) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   const responseArray = []
-  
   var token = await simpleStorage.getToken(configOptions);
 
   if (address !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=' + address + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=sundsvall ' + address + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -24,29 +24,35 @@ async function doGet(req, res, address) {
        }
     })]).then(([req1]) => {
       const adressIdArr = [];
-      req1.data.forEach(element => {
-        //responseArray.push({ address: element.adress, objectidentifier: element.objektidentitet });
-        adressIdArr.push(element.objektidentitet);
-      });
-      Promise.all([axios({
-        method: 'POST',
-        url: encodeURI(configOptions.url_address + '/?includeData=total'),
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'content-type': 'application/json',
-          'scope': `${configOptions.scope}`
-         },
-         data: adressIdArr
-      })]).then(([reqPost]) => {
-        reqPost.data.features.forEach(element => {
-          const addressObj = concatAddress(element);
-          responseArray.push({ 
-            address: addressObj.adress, 
-            objectidentifier: element.properties.registerenhetsreferens.objektidentitet
-          });
+      if (req1.data.length > 0) {
+        req1.data.forEach(element => {
+          //responseArray.push({ address: element.adress, objectidentifier: element.objektidentitet });
+          adressIdArr.push(element.objektidentitet);
         });
+        Promise.all([axios({
+          method: 'POST',
+          url: encodeURI(configOptions.url_address + '/?includeData=total'),
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'content-type': 'application/json',
+            'scope': `${configOptions.scope}`
+           },
+           data: adressIdArr
+        })]).then(([reqPost]) => {
+          reqPost.data.features.forEach(element => {
+            const addressObj = concatAddress(element);
+            responseArray.push({ 
+              address: addressObj.adress, 
+              designation: addressObj.registerenhetsreferensBeteckning, 
+              objectidentifier: element.properties.registerenhetsreferens.objektidentitet
+            });
+          });
+          responseArray.sort((a,b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
+          res.status(200).json(responseArray);
+        });    
+      } else {
         res.status(200).json(responseArray);
-      });    
+      }
     });
  } else {
       res.status(400).json({error: 'Missing required address'});
@@ -76,6 +82,8 @@ function concatAddress(feature) {
     adress['postnummer'] = feature.properties.adressplatsattribut.postnummer;
     adress['postort'] = feature.properties.adressplatsattribut.postort;
     adress['adressplatspunkt'] = feature.properties.adressplatsattribut.adressplatspunkt;
+    adress['registerenhetsreferensBeteckning'] = feature.properties.registerenhetsreferens.beteckning;
+    adress['registerenhetsreferensObjektidentitet'] = feature.properties.registerenhetsreferens.objektidentitet;
   }
   return adress;
 }
@@ -95,11 +103,17 @@ module.exports = {
         maxHits = '100';
       }
       if ('address' in parsedUrl.query) {
-        address = parsedUrl.query.address;
+        if (parsedUrl.query.address.match(regex) !== null) {
+          address = parsedUrl.query.address;         
+        } else {
+          res.status(400).json({error: 'Invalid in parameter address'});
+        }
       } else {
         res.status(400).json({error: 'Missing required parameter address'});
       }
-      doGet(req, res, address, statusDesignation, maxHits);
+      if (address.length > 0) {
+        doGet(req, res, address, statusDesignation, maxHits);
+      }
     },
   };
   
@@ -111,7 +125,22 @@ module.exports = {
           in: 'query',
           name: 'address',
           required: true,
-          type: 'string'
+          type: 'string',
+          description: 'An address to search for  (starts with).'
+        },
+        {
+          in: 'query',
+          name: 'maxHits',
+          required: false,
+          type: 'integer',
+          description: 'The maximal number of hits returned. Defaults to 100'
+        },
+        {
+          in: 'query',
+          name: 'status',
+          required: false,
+          type: 'string',
+          description: 'The status of the address. Defaults to "Gällande"'
         }
       ],
     responses: {
@@ -120,7 +149,7 @@ module.exports = {
         schema: {
             type: 'array',
             items: {
-              $ref: '#/definitions/EstateAddressId'
+              $ref: '#/definitions/EstateAddressResponse'
             }
           },
       },
