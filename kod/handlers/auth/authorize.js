@@ -9,8 +9,8 @@ module.exports = async function authorize(req, res) {
     console.log('req.query.redirectUrl');
     console.log(req.query.redirectUrl);
     console.log('conf.auth.redirect_uris[req.query.redirectUrl]');
-    console.log(conf.auth.redirect_uris[req.query.redirectUrl]);
-    const callbackUrl = conf.auth.redirect_uris[req.query.redirectUrl];
+    console.log(conf.auth.clients[req.query.redirectUrl]);
+    const callbackUrl = conf.auth.clients[req.query.redirectUrl];
     console.log('callbackUrl');
     console.log(callbackUrl);
 	  if(callbackUrl) {		
