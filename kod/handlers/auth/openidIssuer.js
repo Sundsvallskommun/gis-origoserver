@@ -17,7 +17,7 @@ const getOpenidClient = async () => {
   client = new issuer.Client({
     client_id: conf.auth.client_id,
     client_secret: conf.auth.client_secret,
-    redirect_uris: [conf.auth.redirect_uri],
+    redirect_uris: [conf.auth.redirect_uris],
     response_types: ['code'],
     grant_types: ['authorization_code', 'refresh_token']
   });
