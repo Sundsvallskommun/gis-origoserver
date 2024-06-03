@@ -21,6 +21,7 @@ const limiter = rateLimit({
 	max: 10000, // Limit each IP to 500 requests per `window` (here, per 15 minutes)
 	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
 	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
 
 // apply rate limiter to all requests
@@ -103,6 +104,9 @@ var handlebars = require('express-handlebars')
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
+app.set('trust proxy', 1)
+app.get('/origoserver/ip', (request, response) => response.send(request.ip))
+app.get('/origoserver/x-forwarded-for', (request, response) => response.send(request.headers['x-forwarded-for']));
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
