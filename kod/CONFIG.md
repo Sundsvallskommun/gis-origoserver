@@ -96,7 +96,7 @@ An openID connect provider is required for this to work.
 
 - NGP Detaljplan - get documents from detailed plans
 
-Acts as a attachment server for files from Nationella geodataplattformen (NGP). First setup the Oauth2 keys in Lantmäteriet apimanager and add GeodatakatalogSökning and GeodatakatalogNedladdning as subscribtions.
+Acts as a attachment server for files from Nationella geodataplattformen (NGP). First setup the Oauth2 keys in [Lantmäteriet APImanager](https://apimanager.lantmateriet.se/devportal/apis) and add GeodatakatalogSökning and GeodatakatalogNedladdning as subscribtions.
 
     	url_base - the base url to Lantmäteriet API, f.e. 'https://api.lantmateriet.se/' or 'https://api-ver.lantmateriet.se/'.
 
