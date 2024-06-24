@@ -33,7 +33,7 @@ var clients = require('../handlers/clients');
 var disturbances = require('../handlers/disturbances');
 var getImage = require('../handlers/getimage');
 var fbwebbProxy = require('../handlers/fbwebbproxy');
-var ngpDetaljplan = require('../handlers/ngpdetaljplan');
+var ngp = require('../handlers/ngp');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -73,7 +73,6 @@ router.use('/clients', clients);
 router.all('/disturbances', disturbances);
 router.all('/getimage', getImage);
 router.all('/fbwebbproxy/*', fbwebbProxy);
-router.get('/attachments/:table/:filenumber/attachments/', ngpDetaljplan['listAll']);
-router.get('/attachments/:table/:filenumber/attachments/:uuid', ngpDetaljplan['fetchDoc']);
+router.use('/ngp', ngp);
 
 module.exports = router;

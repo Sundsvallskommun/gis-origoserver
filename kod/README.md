@@ -147,6 +147,6 @@ Configured services at:
 
       Configure ngpDetaljplan in conf/config.js
 
-      /origoserver/attachments/detaljplan/2281K-DP-xxx/attachments
+      /origoserver/attachments/ngp/dpdocuments/something-like-the-layername/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/attachments
 
-      /origoserver/attachments/detaljplan/2281K-DP-xxx/attachments/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      /origoserver/attachments/ngp/dpdocuments/something-like-the-layername/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/attachments/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
