@@ -17,10 +17,9 @@ var authSamlRouter = require('./handlers/authsaml');
 var app = express();
 
 const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 10000, // Limit each IP to 500 requests per `window` (here, per 15 minutes)
+	windowMs: 5 * 60 * 1000, // 5 minutes
+	max: 10000, // Limit each IP to 10000 requests per `window` (here, per 15 minutes)
 	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
 
@@ -80,6 +79,14 @@ openapi.initialize({
   ],
 });
 
+openapi.initialize({
+  apiDoc: require('./handlers/openapitest/api-association/api-doc.js'),
+  app: app,
+  paths: [
+		path.resolve(__dirname, 'handlers/openapitest/api-association/'),
+  ],
+});
+
 var server = app.listen(3001, function () {
   var host = server.address().address
   var port = server.address().port
@@ -120,7 +127,8 @@ app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
-	app.use('/origoserver/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
+  conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/lmap/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
+	//app.use('/origoserver/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
 }
 app.use('/origoserver/auth/saml', authSamlRouter);
 app.use(errors);

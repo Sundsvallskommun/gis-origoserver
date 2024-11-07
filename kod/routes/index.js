@@ -34,6 +34,7 @@ var disturbances = require('../handlers/disturbances');
 var getImage = require('../handlers/getimage');
 var fbwebbProxy = require('../handlers/fbwebbproxy');
 var ngp = require('../handlers/ngp');
+var attachment = require('../handlers/attachment');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -74,5 +75,6 @@ router.all('/disturbances', disturbances);
 router.all('/getimage', getImage);
 router.all('/fbwebbproxy/*', fbwebbProxy);
 router.use('/ngp', ngp);
+router.use('/attachment', attachment);
 
 module.exports = router;
