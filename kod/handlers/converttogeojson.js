@@ -176,16 +176,25 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
     })
     .then(function (result) {
       var body = {};
-      if (typeof configOptions.encoding === 'undefined' || configOptions.encoding === null) {
-        body = JSON.parse(result);
+      if (result.startsWith('<')) {        
+        res.send({ error: 'Not JSON reponse!' });
       } else {
-        var bodyWithCorrectEncoding = iconv.decode(Buffer.concat(chunks), configOptions.encoding);
-        body = JSON.parse(bodyWithCorrectEncoding);
-      }
-      if (configOptions.arrayOfObjects === null) {
-        res.send(createGeojson(body, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType));
-      } else {
-        res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
+        if (typeof configOptions.encoding === 'undefined' || configOptions.encoding === null) {
+          try {
+            body = JSON.parse(result);
+          } catch (error) {
+            console.log(error);
+            res.send({ error, config: configOptions });
+          }
+        } else {
+          var bodyWithCorrectEncoding = iconv.decode(Buffer.concat(chunks), configOptions.encoding);
+          body = JSON.parse(bodyWithCorrectEncoding);
+        }
+        if (configOptions.arrayOfObjects === null) {
+          res.send(createGeojson(body, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType));
+        } else {
+          res.send(createGeojson(body[configOptions.arrayOfObjects], configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter));
+        }
       }
     })
     .catch(function (err) {
@@ -205,122 +214,124 @@ function createGeojson(entities, configOptions, srid, filterOn, filterValue, exc
     type: 'name',
     properties: { name: 'urn:ogc:def:crs:EPSG::' + srid }
   };
-  entities.forEach((entity) => {
-    const tempEntity = {};
-    const tempProperties = {};
-    let hasGeometry = false;
-    tempEntity['type'] = 'Feature';
-    if ("Array" === configOptions.geometry_format) {
-      if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
+  if (typeof entities !== 'undefined') {
+    entities.forEach((entity) => {
+      const tempEntity = {};
+      const tempProperties = {};
+      let hasGeometry = false;
+      tempEntity['type'] = 'Feature';
+      if ("Array" === configOptions.geometry_format) {
+        if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
+          tempEntity['geometry'] = {
+            coordinates: JSON.parse(entity[configOptions.geometry]),
+            type: configOptions.geometry_type
+          };
+          hasGeometry = true;
+        } else {
+          hasGeometry = false;
+        }
+      } else if ("LatLng" === configOptions.geometry_format) {
+        if (configOptions.geometry.length > 1) {
+          tempEntity['geometry'] = {
+            coordinates: [ Number(entity[configOptions.geometry[1]]), Number(entity[configOptions.geometry[0]]) ],
+            type: configOptions.geometry_type
+          };
+          hasGeometry = true;
+        } else {
+          hasGeometry = false;
+        }
+      } else if ("GeometryCollections" === configOptions.geometry_format) {
+        var i;
+        var tempGeometries = [];
+        for (i = 0; i < configOptions.geometry.length; i++) {
+          const tempGeom = getAttribute(entity, configOptions.geometry[i]);
+          if (typeof tempGeom !== 'undefined' && tempGeom !== null) {
+            tempGeometries.push({
+                type: configOptions.geometry_type[i],
+                coordinates: JSON.parse(tempGeom)
+            });
+          }
+        }
         tempEntity['geometry'] = {
-          coordinates: JSON.parse(entity[configOptions.geometry]),
-          type: configOptions.geometry_type
-        };
+           type: 'GeometryCollection',
+           geometries: tempGeometries
+        }
         hasGeometry = true;
-      } else {
-        hasGeometry = false;
-      }
-    } else if ("LatLng" === configOptions.geometry_format) {
-      if (configOptions.geometry.length > 1) {
-        tempEntity['geometry'] = {
-          coordinates: [ Number(entity[configOptions.geometry[1]]), Number(entity[configOptions.geometry[0]]) ],
-          type: configOptions.geometry_type
-        };
-        hasGeometry = true;
-      } else {
-        hasGeometry = false;
-      }
-    } else if ("GeometryCollections" === configOptions.geometry_format) {
-      var i;
-      var tempGeometries = [];
-      for (i = 0; i < configOptions.geometry.length; i++) {
-        const tempGeom = getAttribute(entity, configOptions.geometry[i]);
-        if (typeof tempGeom !== 'undefined' && tempGeom !== null) {
-          tempGeometries.push({
-              type: configOptions.geometry_type[i],
-              coordinates: JSON.parse(tempGeom)
-          });
+      } else if ("GeoJSON" === configOptions.geometry_format) {
+        if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
+          tempEntity['geometry'] = entity[configOptions.geometry];
+          hasGeometry = true;
+        } else {
+          hasGeometry = false;
+        }
+      } else if ("Geometry" === configOptions.geometry_format) {
+        if (typeof entity['geojson'] !== 'undefined' && entity['geojson'] !== null) {
+          tempEntity['geometry'] = entity['geojson'];
+          hasGeometry = true;
+        } else {
+          hasGeometry = false;
         }
       }
-      tempEntity['geometry'] = {
-         type: 'GeometryCollection',
-         geometries: tempGeometries
-      }
-      hasGeometry = true;
-    } else if ("GeoJSON" === configOptions.geometry_format) {
-      if (typeof entity[configOptions.geometry] !== 'undefined' && entity[configOptions.geometry] !== null) {
-        tempEntity['geometry'] = entity[configOptions.geometry];
-        hasGeometry = true;
-      } else {
-        hasGeometry = false;
-      }
-    } else if ("Geometry" === configOptions.geometry_format) {
-      if (typeof entity['geojson'] !== 'undefined' && entity['geojson'] !== null) {
-        tempEntity['geometry'] = entity['geojson'];
-        hasGeometry = true;
-      } else {
-        hasGeometry = false;
-      }
-    }
-    configOptions.properties.forEach((property) => {
-      if (configOptions.onlyUseLastPartOfNestedPropname) {
-        const propArray = property.split(".");
-        tempProperties[propArray[propArray.length-1]] = getAttribute(entity, property);
-      } else {
-        tempProperties[property] = getAttribute(entity, property);
-      }
-    });
-    tempEntity['properties'] = tempProperties;
-    // Only add those with a geometry
-    if (hasGeometry) {
-      let pushEntity = false;
-      // If no filter parameter was configed then all should be pushed
-      if (filterOn === '' && dateFilter === '' ) {
-        pushEntity = true;
-      } else {
-        // If no value for the filter is supplied then all should be pushed
-        if (typeof filterValue === 'undefined' || filterValue === null || filterValue === '') {
+      configOptions.properties.forEach((property) => {
+        if (configOptions.onlyUseLastPartOfNestedPropname) {
+          const propArray = property.split(".");
+          tempProperties[propArray[propArray.length-1]] = getAttribute(entity, property);
+        } else {
+          tempProperties[property] = getAttribute(entity, property);
+        }
+      });
+      tempEntity['properties'] = tempProperties;
+      // Only add those with a geometry
+      if (hasGeometry) {
+        let pushEntity = false;
+        // If no filter parameter was configed then all should be pushed
+        if (filterOn === '' && dateFilter === '' ) {
           pushEntity = true;
         } else {
-          if (filterValue == getAttribute(entity, filterOn) ){
+          // If no value for the filter is supplied then all should be pushed
+          if (typeof filterValue === 'undefined' || filterValue === null || filterValue === '') {
             pushEntity = true;
-          }
-        }
-      }
-      if (typeof dateFilter !== 'undefined') {
-        if (dateFilter.type === 'between' ){
-          const firstDate = getAttribute(entity, dateFilter.firstDate);
-          const secondDate = getAttribute(entity, dateFilter.secondDate);
-          if (Date.parse(firstDate) > Date.now()) {
-            pushEntity = false;
-          }
-          if (Date.parse(secondDate) < Date.now()) {
-            pushEntity = false;
-          }
-        }
-      }
-      if (excludeOn !== '') {
-        if (Array.isArray(excludeValue)) {
-          let foundExclude = false;
-          excludeValue.forEach((value) => {
-            if (String(value) == String(getAttribute(entity, excludeOn)) ){
-              foundExclude = true;
+          } else {
+            if (filterValue == getAttribute(entity, filterOn) ){
+              pushEntity = true;
             }
-          });
-          if (foundExclude) {
+          }
+        }
+        if (typeof dateFilter !== 'undefined') {
+          if (dateFilter.type === 'between' ){
+            const firstDate = getAttribute(entity, dateFilter.firstDate);
+            const secondDate = getAttribute(entity, dateFilter.secondDate);
+            if (Date.parse(firstDate) > Date.now()) {
+              pushEntity = false;
+            }
+            if (Date.parse(secondDate) < Date.now()) {
+              pushEntity = false;
+            }
+          }
+        }
+        if (excludeOn !== '') {
+          if (Array.isArray(excludeValue)) {
+            let foundExclude = false;
+            excludeValue.forEach((value) => {
+              if (String(value) == String(getAttribute(entity, excludeOn)) ){
+                foundExclude = true;
+              }
+            });
+            if (foundExclude) {
+              pushEntity = false;
+            }
+          } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) && excludeType === 'equal' ){
+            pushEntity = false;
+          } else if (Date.parse(getAttribute(entity, excludeOn).replaceAll('"', '')) < (Date.now() + excludeValue) && excludeType === 'timeMiliseconds' ){
             pushEntity = false;
           }
-        } else if (String(excludeValue) == String(getAttribute(entity, excludeOn)) && excludeType === 'equal' ){
-          pushEntity = false;
-        } else if (Date.parse(getAttribute(entity, excludeOn).replaceAll('"', '')) < (Date.now() + excludeValue) && excludeType === 'timeMiliseconds' ){
-          pushEntity = false;
+        }
+        if (pushEntity) {
+          features.push(tempEntity);
         }
       }
-      if (pushEntity) {
-        features.push(tempEntity);
-      }
-    }
-  });
+    });
+  }
   result['features'] = features;
   return result;
 }

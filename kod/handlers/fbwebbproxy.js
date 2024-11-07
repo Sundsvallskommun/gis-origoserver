@@ -1,9 +1,13 @@
 var conf = require('../conf/config');
 const axios = require('axios');
+const https = require('https');
 
 module.exports = function fbwebbProxy(req, res) {
     var proxyUrl = 'fbwebbproxy';
     var options;
+    const agent = new https.Agent({  
+        rejectUnauthorized: false
+    });
     if (conf[proxyUrl]) {
         const uuid = req.query.uuid;
         options = Object.assign({}, conf[proxyUrl]);
@@ -16,7 +20,8 @@ module.exports = function fbwebbProxy(req, res) {
                     username: options.user,
                     password: options.pass
                 }
-            }
+            },
+            httpsAgent: agent
             })
             .then((response) => {
             console.log(response.data);

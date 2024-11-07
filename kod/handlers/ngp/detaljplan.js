@@ -17,7 +17,7 @@ let tokenExpires;
 
 if (conf['ngpDetaljplan']) {
     configOptions = Object.assign({}, conf['ngpDetaljplan']);
- }
+}
 
 /**
  * Logs in against LM and fills the global variable "token" with a new token
