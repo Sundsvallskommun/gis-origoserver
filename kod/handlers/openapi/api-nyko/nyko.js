@@ -35,8 +35,12 @@ function doGet(req, res, nyko, uttagsdatum, interval) {
       connection.on('connect', function(err) {
         // If no error, then good to proceed.
         //console.log("Connected");
-        connected = true;
-        executeStatement(nyko, uttagsdatum, interval, res);
+        if (!err) {
+          connected = true;
+          executeStatement(nyko, uttagsdatum, interval, res);
+        } else {
+          res.status(400).json({error: err});
+        }
       });
       if (!connected) {
         connection.connect();
