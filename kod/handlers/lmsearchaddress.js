@@ -2,12 +2,11 @@ var conf = require('../conf/config');
 var request = require('request');
 var rp = require('request-promise');
 const url = require('url');
-var https = require('https');
-const getToken = require('../lib/tokenrequest');
 
 var objectIds;
 var srid;
 var maxHits;
+var statusAddress;
 var format;
 
 // Token holder
@@ -60,11 +59,26 @@ const lmSearchAddress = async (req, res) => {
     } else {
       format = '';
     }
+    if ('statusAddress' in parsedUrl.query) {
+      statusAddress = parsedUrl.query.statusAddress;
+    } else {
+      statusAddress = 'Gällande';
+    }
+    if ('municipalityCodes' in parsedUrl.query) {
+      municipalityCodes = parsedUrl.query.municipalityCodes.split(',');
+    } else {
+      municipalityCodes = [];
+    }
     if (northing !== undefined && easting !== undefined) {
       getAddressPointAsyncCall(northing, easting, req, res);
     } else {
-      // Do a free text search to get the IDs of all that matches
-      await doSearchAsyncCall(municipalityArray, searchValue);
+      if (municipalityCodes.length > 0) {
+        // Do a free text search with municipality codes to get the IDs of all that matches
+        await doSearchWithCodesAsyncCall(municipalityCodes, searchString);
+      } else {
+        // Do a free text search to get the IDs of all that matches
+        await doSearchAsyncCall(municipalityArray, searchValue);
+      }
 
       // Allow a maximum of 250 objects
       objectIds.length = objectIds.length > 250 ? 250 : objectIds.length;
@@ -128,12 +142,62 @@ function doSearchWait(options) {
   })
 }
 
+async function doSearchWithCodesAsyncCall(municipalityCodes, searchValue) {
+  var returnValue = [];
+  var promiseArray = [];
+  // Split all the separate municipality given to individual searches
+  municipalityCodes.forEach(function(municipality) {
+    var searchUrl = encodeURI(configOptions.url + '/referens/fritext?adress=' + searchValue.replaceAll(',','') + ' &kommunkod=' + municipality + '&status=' + statusAddress + '&maxHits=' + maxHits)
+    // Setup the search call and wait for result
+    const options = {
+        url: searchUrl,
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'scope': `${scope}`
+        }
+    }
+    promiseArray.push(rp.get(options)
+      .then(function(result) {
+        var parameters = JSON.parse(result);
+        var objektidentitet = [];
+
+        parameters.forEach(function(parameter) {
+          if (parameter.objektidentitet) {
+            objektidentitet.push(parameter.objektidentitet);
+          }
+        });
+        return objektidentitet;
+      })
+    )
+  });
+
+  await Promise.all(promiseArray)
+    .then(function (resArr) {
+        // Save the response to be handled in finally
+        returnValue = resArr;
+    })
+    .catch(function (err) {
+        // If fail return empty array
+        objectIds = [];
+    })
+    .finally(function () {
+        // When all search has finished concat them to a single array of object Ids
+        var newArray = [];
+        returnValue.forEach(function(search) {
+          newArray = newArray.concat(search);
+        });
+        objectIds = newArray;
+    });
+}
+
 async function doSearchAsyncCall(municipalityArray, searchValue) {
   var returnValue = [];
   var promiseArray = [];
   // Split all the separate municipality given to individual searches
   municipalityArray.forEach(function(municipality) {
-    var searchUrl = encodeURI(configOptions.url + '/referens/fritext?adress=' + String(searchValue).replaceAll(',','') + ' ' + municipality + '&maxHits=' + maxHits)
+    var searchUrl = encodeURI(configOptions.url + '/referens/fritext?adress=' + searchValue.replaceAll(',','') + ' ' + municipality + '&status=' + statusAddress + '&maxHits=' + maxHits)
     // Setup the search call and wait for result
     const options = {
         url: searchUrl,
@@ -268,7 +332,6 @@ function concatResult(features) {
   const result = [];
 
   features.forEach((feature) => {
-    if (!feature.properties.adressomrade) {console.log(feature);}
     const objektidentitet_1 = feature.properties.objektidentitet;
     const objektidentitet_2 = feature.properties.registerenhetsreferens.objektidentitet;
     const kommun = feature.properties.adressomrade ? feature.properties.adressomrade.kommundel.faststalltNamn : feature.properties.gardsadressomrade.adressomrade.kommundel.faststalltNamn;
