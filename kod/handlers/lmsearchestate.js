@@ -291,11 +291,13 @@ function concatResult(features, municipalityArray) {
 
   features.forEach((feature) => {
     let objektidentitet = '';
-    const registeromrade = feature.properties.registerbeteckning[0].registeromrade ? feature.properties.registerbeteckning[0].registeromrade : '';
-    const beteckningsid = feature.properties.registerbeteckning[0].objektidentitet;
-    const beteckning = feature.properties.registerbeteckning[0].trakt ? feature.properties.registerbeteckning[0].trakt : '';
-    const block = feature.properties.registerbeteckning[0].block ? feature.properties.registerbeteckning[0].block : '';
-    const enhet = feature.properties.registerbeteckning[0].enhet ? feature.properties.registerbeteckning[0].enhet : '';
+    // Get the current assignation incase there are more than one
+    const gallandBeteckning = feature.properties.registerbeteckning.find(beteckning => beteckning.beteckningsstatus === "gällande");
+    const registeromrade = gallandBeteckning.registeromrade ? gallandBeteckning.registeromrade : '';
+    const beteckningsid = gallandBeteckning.objektidentitet;
+    const beteckning = gallandBeteckning.trakt ? gallandBeteckning.trakt : '';
+    const block = gallandBeteckning.block ? gallandBeteckning.block : '';
+    const enhet = gallandBeteckning.enhet ? gallandBeteckning.enhet : '';
     let coordinates = [];
     // Check to see if feature has none or multiple coordinates
     if ('registerenhetsreferens' in feature.properties) {
