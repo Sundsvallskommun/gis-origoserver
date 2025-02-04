@@ -1,0 +1,27 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-4">
+      <div class="page-header">
+          <h2>Samfällighetsföreningar</h2>
+      </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Antal föreningar: {{numberAssociations}}</h3>
+          </div>
+          {{#each associations}}
+            <table class="table">
+              <tbody>
+                  <tr>
+                    <td>
+                        {{#if foreningensForetagsnamn}}
+                          <a href="/origoserver/lm/communityassociation/{{objektidentitet}}">{{foreningensForetagsnamn}}</a><br>
+                        {{/if}}
+                   </td>
+                  </tr>
+              </tbody>
+            </table>
+          {{/each}}
+        </div>
+    </div>
+  </div>
+</div>
