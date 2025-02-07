@@ -321,6 +321,16 @@ async function doProcessRequests(req, res, configOptions, token) {
                         const resultingGeojson = await addGeometryAndMakeGeojson(arrSamfallPromises, configOptions, token, srid);
                         res.send(resultingGeojson);
                     } else {
+                        // Sorting the array by the 'foreningensForetagsnamn' key
+                        assArray.sort((a, b) => {
+                            if (a.foreningensForetagsnamn.toLowerCase() < b.foreningensForetagsnamn.toLowerCase()) {
+                            return -1;
+                            }
+                            if (a.foreningensForetagsnamn.toLowerCase() > b.foreningensForetagsnamn.toLowerCase()) {
+                            return 1;
+                            }
+                            return 0;
+                        });
                         res.render('lmCommunityAssociationList', { associations: assArray, numberAssociations: assArray.length });
                     }
                 } else {
