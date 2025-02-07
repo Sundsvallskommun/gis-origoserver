@@ -1,17 +1,20 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-md-4">
-      <div class="page-header">
+      <div class="card">
+        <div class="card-header">
           <h2>{{{features.[0].properties.samfallighetsforeningsattribut.foreningensForetagsnamn}}}</h2>
+        </div>
       </div>
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">Föreningsinformation</h3>
-          </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Föreningsinformation</h3>
+        </div>
+      </div>
                 {{#each features}}
-            <table class="table">
+            <table class="table table-light">
               <tbody>
-                  <tr>
+                  <tr class="table-active">
                     <td>
                         {{#if properties.samfallighetsforeningsattribut.foreningensForetagsnamn}}
                           Föreningens företagsnamn: {{properties.samfallighetsforeningsattribut.foreningensForetagsnamn}}<br>
@@ -25,7 +28,10 @@
                         {{#if properties.samfallighetsforeningsattribut.status}}
                           Status: {{properties.samfallighetsforeningsattribut.status}}<br>
                         {{/if}}
-                        <br><p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
                           Adress:<br>
                           {{#if properties.samfallighetsforeningsattribut.utdelningsadress1}}
                             {{properties.samfallighetsforeningsattribut.utdelningsadress1}}<br>
@@ -39,7 +45,10 @@
                           {{#if properties.samfallighetsforeningsattribut.postort}}
                             {{properties.samfallighetsforeningsattribut.postort}}<br>
                           {{/if}}
-                        </p>
+                    </td>
+                  </tr>
+                  <tr class="table-active">
+                    <td>
                         {{#if properties.samfallighetsforeningsattribut.sate}}
                           Säte: {{properties.samfallighetsforeningsattribut.sate}}<br>
                         {{/if}}
@@ -76,10 +85,12 @@
               </tbody>
             </table>
              <table class="table">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Styrelsemedlemmar</h3>
+                </div>
+              </div>
               <tbody>
-                <tr>
-                  <th style="background-color: #f5f5f5; border-top: 1px solid #ddd;">Styrelsemedlemmar</th>
-                </tr>
                        {{#each properties.styrelsemedlem}}
                         <tr>
                           <td>
@@ -114,9 +125,11 @@
             </table>
             <table class="table">
               <tbody>
-                <tr>
-                  <th style="background-color: #f5f5f5; border-top: 1px solid #ddd;">Styrelseinformation</th>
-                </tr>
+              <div class="card">
+                <div class="card-header">
+                  <h3>Styrelseinformation</h3>
+                </div>
+              </div>
                 <tr>
                   <td>
                   {{#if properties.styrelseinformation.versionGiltigFran}}
@@ -140,9 +153,11 @@
             </table>
             <table class="table">
               <tbody>
-                <tr>
-                  <th style="background-color: #f5f5f5; border-top: 1px solid #ddd;">Förvaltningsobjekt</th>
-                </tr>
+              <div class="card">
+                <div class="card-header">
+                  <h3>Förvaltningsobjekt</h3>
+                </div>
+              </div>
                        {{#each properties.forvaltningsobjekt}}
                         <tr>
                           <td>
@@ -293,9 +308,11 @@
             </table>
             <table class="table">
               <tbody>
-                <tr>
-                  <th style="background-color: #f5f5f5; border-top: 1px solid #ddd;">Arkivakt</th>
-                </tr>
+              <div class="card">
+                <div class="card-header">
+                  <h3>Arkivakt</h3>
+                </div>
+              </div>
                        {{#each properties.arkivakt}}
                         <tr>
                           <td>

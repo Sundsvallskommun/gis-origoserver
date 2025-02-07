@@ -4,23 +4,20 @@
       <div class="page-header">
           <h2>Samfällighetsföreningar</h2>
       </div>
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">Antal föreningar: {{numberAssociations}}</h3>
+        <div class="card">
+          <div class="card-header">
+             <h3 class="mb-0">Antal föreningar: {{numberAssociations}}</h3>
           </div>
           {{#each associations}}
-            <table class="table">
-              <tbody>
-                  <tr>
-                    <td>
-                        {{#if foreningensForetagsnamn}}
-                          <a href="/origoserver/lm/communityassociation/{{objektidentitet}}">{{foreningensForetagsnamn}}</a><br>
-                        {{/if}}
-                   </td>
-                  </tr>
-              </tbody>
-            </table>
+             <div class="card-body">
+              {{#if foreningensForetagsnamn}}
+                <a href="/origoserver/lm/communityassociation/{{objektidentitet}}">{{foreningensForetagsnamn}}</a><br>
+              {{/if}}
+              </div>
           {{/each}}
+          <div class="card-footer text-body-secondary">
+             <h3 class="mb-0">Antal föreningar: {{numberAssociations}}</h3>
+          </div>
         </div>
     </div>
   </div>
