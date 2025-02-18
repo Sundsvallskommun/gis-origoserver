@@ -8,7 +8,7 @@ var clients = function(req, res) {
   console.log(req.query.state);
   console.log('(req.query.state !== null && req.query.state !== undefined)');
   console.log((req.query.state !== null && req.query.state !== undefined));
-  const clientName = (req.query.state !== null && req.query.state !== undefined) ? req.query.state : '';
+  const clientName = (req.query.state !== null && req.query.state !== undefined) ? req.query.state : 'internkartanTEST';
 
   console.log('req.query.code');
   console.log(req.query.code);
