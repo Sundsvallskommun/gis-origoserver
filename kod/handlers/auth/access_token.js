@@ -23,15 +23,17 @@ module.exports = async function access_token(req, res) {
     } else {
       res.status(400).send('Bad Request: Neither code nor refresh token found.');
     }
-    const user_info = await client.userinfo(token_set.access_token);
-    res.json({
-      authenticated: true,
-      access_token: token_set.access_token,
-      refresh_token: token_set.refresh_token,
-      id_token: token_set.id_token,
-      expires_at: token_set.expires_at,
-      displayname: user_info[conf.auth.display_name]
-    });
+    if (token_set !== null) {
+      const user_info = await client.userinfo(token_set.access_token);
+      res.json({
+        authenticated: true,
+        access_token: token_set.access_token,
+        refresh_token: token_set.refresh_token,
+        id_token: token_set.id_token,
+        expires_at: token_set.expires_at,
+        displayname: user_info[conf.auth.display_name]
+      });
+    }
   } catch (e) {
     console.error(e.toString());
     res.status(500).send('access_token error');
