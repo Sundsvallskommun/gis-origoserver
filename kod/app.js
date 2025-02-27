@@ -7,9 +7,9 @@ var openapi = require('express-openapi');
 var path = require('path');
 
 var routes = require('./routes/index');
+const lmApiProxy = require('./routes/lmapiproxy');
 var adminRouter = require('./routes/admin');
 var mapStateRouter = require('./routes/mapstate');
-const lmApiProxy = require('./routes/lmapiproxy');
 var errors = require('./routes/errors');
 var conf = require('./conf/config');
 var authSamlRouter = require('./handlers/authsaml');
@@ -76,6 +76,8 @@ openapi.initialize({
   app: app,
   paths: [
 		path.resolve(__dirname, 'handlers/openapitest/api-estate'),
+    { path: '/{municipalityId}/estate-by-designation/', module: require('./handlers/openapitest/api-estate/{municipalityId}/estate-by-designation') },
+    { path: '/{municipalityId}/estate-by-address/', module: require('./handlers/openapitest/api-estate/{municipalityId}/estate-by-address') },
   ],
 });
 
@@ -128,10 +130,20 @@ app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
-  conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/origoserver/lmapiproxy/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
-	//app.use('/origoserver/lmapiproxy', lmApiProxy(conf['lmapiproxy']));
+  conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/lmap/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
 }
 app.use('/origoserver/auth/saml', authSamlRouter);
-app.use(errors);
+// Sundsvall special felhanterare
+app.use((err, req, res, next) => {
+  console.error('console error');
+  console.error(err); // Logga felstack till konsolen
+  if ('status' in err) {
+    res.status(err.status).json({ error: err.errors }); // Returnera fel i JSON-format
+  }
+  if ('statusCode' in err) {
+    res.status(err.statusCode).json({ error: err.error }); // Returnera fel i JSON-format
+  }
+});
+//app.use(errors);
 
 module.exports = app;

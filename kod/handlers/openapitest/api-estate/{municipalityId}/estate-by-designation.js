@@ -1,13 +1,13 @@
-const conf = require('../../../conf/config');
-const url = require('url');
-const simpleStorage = require('../simpleStorage');
+const conf = require('../../../../conf/config');
+const { URL } = require('url'); 
+const simpleStorage = require('../../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9:, ]+$/;
 const regexNumbers = /^[0-9]+$/;
 
-async function doGet(req, res, designation, statusDesignation, maxHits) {
+async function doGet(req, res, designation, municipalityId, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
@@ -21,7 +21,7 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
   if (designation !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=Sundsvall ' + designation + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -103,33 +103,37 @@ function concatAddress(feature) {
 
 module.exports = {
   get: function (req, res, next) {
-    const parsedUrl = url.parse(decodeURI(req.url), true);
+    const fullUrl = req.protocol + '://' + req.get('host') + req.url;
+    const parsedUrl = new URL(fullUrl);
+    const params = parsedUrl.searchParams;
+    const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
     let designation = '';
-    if ('status' in parsedUrl.query) {
-      statusDesignation = parsedUrl.query.status;
+    let statusDesignation = 'gällande';
+    if (params.has('status')) {
+      statusDesignation = params.get('status');
     } else {
       statusDesignation = 'gällande';
     }
-    if ('maxHits' in parsedUrl.query) {
-      if (parsedUrl.query.maxHits.match(regexNumbers) !== null) {
-        maxHits = parsedUrl.query.maxHits;
+    if (params.has('maxHits')) {
+      if (params.get('maxHits').match(regexNumbers) !== null) {
+        maxHits = params.get('maxHits');
       } else {
         maxHits = '100';
       }     
     } else {
       maxHits = '100';
     }
-    if ('designation' in parsedUrl.query) {
-      if (parsedUrl.query.designation.match(regex) !== null) {
-        designation = parsedUrl.query.designation;     
+    if (params.has('designation')) {
+      if (params.get('designation').match(regex) !== null) {
+        designation = params.get('designation');     
       } else {
-        res.status(400).json({error: 'Invalid in parameter address'});
+        res.status(400).json({error: 'Invalid in parameter designation'});
       }    
     } else {
       res.status(400).json({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0) {
-      doGet(req, res, designation, statusDesignation, maxHits);
+      doGet(req, res, designation, municipalityId, statusDesignation, maxHits);
     }    
   },
 };
@@ -138,27 +142,33 @@ module.exports.get.apiDoc = {
   description: 'Get information about estate.',
   operationId: 'getEstateIdByDesignation',
   parameters: [
-      {
-        in: 'query',
-        name: 'designation',
-        required: true,
-        type: 'string',
-        description: 'An designation to search for (starts with).'
-      },
-      {
-        in: 'query',
-        name: 'maxHits',
-        required: false,
-        type: 'string',
-        description: 'The maximal number of hits returned. Defaults to 100.'
-      },
-      {
-        in: 'query',
-        name: 'status',
-        required: false,
-        type: 'string',
-        description: 'The status of the estate. Defaults to "gällande".'
-      }
+    {
+      in: 'path',
+      name: 'municipalityId',
+      required: true,
+      type: 'integer'
+    },
+    {
+      in: 'query',
+      name: 'designation',
+      required: true,
+      type: 'string',
+      description: 'An designation to search for (starts with).'
+    },
+    {
+      in: 'query',
+      name: 'maxHits',
+      required: false,
+      type: 'string',
+      description: 'The maximal number of hits returned. Defaults to 100.'
+    },
+    {
+      in: 'query',
+      name: 'status',
+      required: false,
+      type: 'string',
+      description: 'The status of the estate. Defaults to "gällande".'
+    }
   ],
   responses: {
     200: {
@@ -173,13 +183,15 @@ module.exports.get.apiDoc = {
     400: {
       description: 'Bad request',
       schema: {
-        type: 'string',
+        type: 'object',
+        $ref: '#/definitions/ErrorResponse'
       },
     },
     500: {
       description: 'Server error',
       schema: {
-        type: 'string',
+        type: 'object',
+        $ref: '#/definitions/ErrorResponse'
       },
     },
   },
