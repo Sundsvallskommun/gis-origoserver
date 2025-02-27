@@ -62,11 +62,12 @@ const convertToGeojson = async (req, res) => {
     } else {
       q = '';
       console.log('No converting specified!');
-      res.send({});
+      res.status(501).send({ error: 'No converting specified!'});
     }
 
     if (conf[proxyUrl]) {
       options = Object.assign({}, conf[proxyUrl]);
+      let found = false;
       options.converts.forEach((convert) => {
         if (typeof convert.filterOn !== 'undefined' || convert.filterOn !== null) {
           filterOn = convert.filterOn;
@@ -82,13 +83,18 @@ const convertToGeojson = async (req, res) => {
         if (typeof convert.excludeType !== 'undefined' || convert.excludeType !== null) {
           excludeType = convert.excludeType;
         }
-      if (q === convert.name) {
+        if (q === convert.name) {
+          found = true;
           doGet(req, res, convert, convert.crs || srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter);
         }
       });
-    } else {
+      if (!found) {
+        console.log('Not configured!');
+        res.status(501).send({ error: 'Not configured!'});
+      }
+  } else {
       console.log('ERROR config!');
-      res.send({});
+      res.status(501).send({ error: 'ERROR config!'});
     }
   }
 }
@@ -177,14 +183,14 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
     .then(function (result) {
       var body = {};
       if (result.startsWith('<')) {        
-        res.send({ error: 'Not JSON reponse!' });
+        res.status(500).send({ error: 'Not JSON reponse!' });
       } else {
         if (typeof configOptions.encoding === 'undefined' || configOptions.encoding === null) {
           try {
             body = JSON.parse(result);
           } catch (error) {
             console.log(error);
-            res.send({ error, config: configOptions });
+            res.status(500).send({ error, config: configOptions });
           }
         } else {
           var bodyWithCorrectEncoding = iconv.decode(Buffer.concat(chunks), configOptions.encoding);
@@ -200,7 +206,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
     .catch(function (err) {
       console.log(err);
       console.log('ERROR doGet!');
-      res.send({});
+      res.status(500).send({error: 'ERROR doGet!'});
     });
   }
 }

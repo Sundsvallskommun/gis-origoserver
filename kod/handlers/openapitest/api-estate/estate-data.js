@@ -1,5 +1,5 @@
 const conf = require('../../../conf/config');
-const url = require('url');
+const { URL } = require('url'); 
 const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
 
@@ -285,10 +285,12 @@ async function doGet(req, res, objectidentifier) {
 
 module.exports = {
   get: function (req, res, next) {
-    const parsedUrl = url.parse(decodeURI(req.url), true);
+    const fullUrl = req.protocol + '://' + req.get('host') + req.url;
+    const parsedUrl = new URL(fullUrl);
+    const params = parsedUrl.searchParams;
     let objectidentifier = '';
-    if ('objectidentifier' in parsedUrl.query) {
-      objectidentifier = parsedUrl.query.objectidentifier;
+    if (params.has('objectidentifier')) {
+      objectidentifier = params.get('objectidentifier');
     } else {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }

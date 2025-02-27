@@ -15,6 +15,15 @@ module.exports = {
   },
 
   definitions: {
+    ErrorResponse: {
+      type: 'object',
+      properties: {
+        error: {
+          description: 'The error message.',
+          type: 'string'
+        }
+      }
+    },
     EstateDesignationResponse: {
       type: 'object',
       properties: {

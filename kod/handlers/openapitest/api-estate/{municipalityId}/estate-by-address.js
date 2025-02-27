@@ -1,12 +1,12 @@
-const conf = require('../../../conf/config');
-const url = require('url');
-const simpleStorage = require('../simpleStorage');
+const conf = require('../../../../conf/config');
+const { URL } = require('url'); 
+const simpleStorage = require('../../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9, ]+$/;
 
-async function doGet(req, res, address) {
+async function doGet(req, res, address, municipalityId, statusAddress, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
@@ -16,7 +16,7 @@ async function doGet(req, res, address) {
   if (address !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=sundsvall ' + address + '&kommunkod=2281' + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_address + '/referens/fritext?adress=' + address + '&kommunkod=' + municipalityId + '&status=' + statusAddress + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -61,11 +61,17 @@ async function doGet(req, res, address) {
 
 function concatAddress(feature) {
   let adress = {};
-
+  let faststalltNamn = "";
   if ('id' in feature) {
     adress['objektidentitet'] = feature.properties.objektidentitet;
-    adress['kommun'] = feature.properties.adressomrade.kommundel.kommun;
-    const faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    if ('adressomrade' in feature.properties) {
+      adress['kommun'] = feature.properties.adressomrade.kommundel.kommun;
+      faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    }
+    if ('gardsadressomrade' in feature.properties) {
+      adress['kommun'] = feature.properties.gardsadressomrade.adressomrade.kommundel.kommun;
+      faststalltNamn = feature.properties.gardsadressomrade.adressomrade.faststalltNamn + ' ' + feature.properties.gardsadressomrade.faststalltNamn;
+    }
     const adressplatsnummer = feature.properties.adressplatsattribut.adressplatsbeteckning.adressplatsnummer || '';
     const bokstavstillagg = feature.properties.adressplatsattribut.adressplatsbeteckning.bokstavstillagg || '';
     let popularnamn = '';
@@ -90,59 +96,75 @@ function concatAddress(feature) {
 
 module.exports = {
     get: function (req, res, next) {
-      const parsedUrl = url.parse(decodeURI(req.url), true);
-      let address = '';
-      if ('status' in parsedUrl.query) {
-        statusDesignation = parsedUrl.query.status;
-      } else {
-        statusDesignation = 'Gällande';
-      }
-      if ('maxHits' in parsedUrl.query) {
-        maxHits = parsedUrl.query.maxHits;
+    const fullUrl = req.protocol + '://' + req.get('host') + req.url;
+    const parsedUrl = new URL(fullUrl);
+    const params = parsedUrl.searchParams;
+    const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
+    let address = '';
+    let statusAddress = 'Gällande';
+    if (params.has('status')) {
+      statusAddress = params.get('status');
+    } else {
+      statusAddress = 'Gällande';
+    }
+    if (params.has('maxHits')) {
+      if (params.get('maxHits').match(regexNumbers) !== null) {
+        maxHits = params.get('maxHits');
       } else {
         maxHits = '100';
-      }
-      if ('address' in parsedUrl.query) {
-        if (parsedUrl.query.address.match(regex) !== null) {
-          address = parsedUrl.query.address;         
-        } else {
-          res.status(400).json({error: 'Invalid in parameter address'});
-        }
+      }     
+    } else {
+      maxHits = '100';
+    }
+    if (params.has('address')) {
+      if (params.get('address').match(regex) !== null) {
+        address = params.get('address');     
       } else {
-        res.status(400).json({error: 'Missing required parameter address'});
+        res.status(400).json({error: 'Invalid in parameter address'});
       }
-      if (address.length > 0) {
-        doGet(req, res, address, statusDesignation, maxHits);
-      }
-    },
-  };
+    } else {
+      res.status(400).json({error: 'Missing required parameter address'});
+    }
+    if (address.length > 0) {
+      doGet(req, res, address, municipalityId, statusAddress, maxHits);
+    } else {
+      res.status(200).json({});
+    }
+  },
+};
   
   module.exports.get.apiDoc = {
     description: 'Get information about estate by searching on address.',
     operationId: 'getEstateIdByAddress',
     parameters: [
-        {
-          in: 'query',
-          name: 'address',
-          required: true,
-          type: 'string',
-          description: 'An address to search for  (starts with).'
-        },
-        {
-          in: 'query',
-          name: 'maxHits',
-          required: false,
-          type: 'integer',
-          description: 'The maximal number of hits returned. Defaults to 100'
-        },
-        {
-          in: 'query',
-          name: 'status',
-          required: false,
-          type: 'string',
-          description: 'The status of the address. Defaults to "Gällande"'
-        }
-      ],
+      {
+        in: 'path',
+        name: 'municipalityId',
+        required: true,
+        type: 'integer'
+      },
+      {
+        in: 'query',
+        name: 'address',
+        required: true,
+        type: 'string',
+        description: 'An address to search for  (starts with).'
+      },
+      {
+        in: 'query',
+        name: 'maxHits',
+        required: false,
+        type: 'integer',
+        description: 'The maximal number of hits returned. Defaults to 100'
+      },
+      {
+        in: 'query',
+        name: 'status',
+        required: false,
+        type: 'string',
+        description: 'The status of the address. Defaults to "Gällande"'
+      }
+    ],
     responses: {
       200: {
         description: 'Responds with a list of addresses and their unique estate identifier',
@@ -156,13 +178,15 @@ module.exports = {
       400: {
         description: 'Bad request',
         schema: {
-          type: 'string',
+          type: 'object',
+          $ref: '#/definitions/ErrorResponse'
         },
       },
       500: {
         description: 'Server error',
         schema: {
-          type: 'string',
+          type: 'object',
+          $ref: '#/definitions/ErrorResponse'
         },
       },
     },

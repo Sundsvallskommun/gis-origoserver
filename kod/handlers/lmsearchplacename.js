@@ -69,7 +69,12 @@ const lmSearchPlacename = async (req, res) => {
           searchUrl = searchUrl + '&maxHits=' + limit;
         }
         searchUrl = searchUrl + '&srid=' + srid;
-        doSearchAsyncCall(req, res, municipalityArray, searchUrl);
+        if ( q.length > 0 ) {
+          doSearchAsyncCall(req, res, municipalityArray, searchUrl);
+        } else {
+          console.log('No searchstring, skip!');
+          res.send({});
+        }
       } else {
         console.log('Skip');
         res.send({});
@@ -124,7 +129,7 @@ async function doSearchAsyncCall(req, res, municipalityArray, urlParams) {
   var promiseArray = [];
   // Split all the separate municipality given to individual searches
   municipalityArray.forEach(function(municipality) {
-    var searchUrl = encodeURI(configOptions.url + urlParams + '&kommunkod=' + municipality)
+    const searchUrl = municipality ? encodeURI(configOptions.url + urlParams + '&kommunkod=' + municipality) : encodeURI(configOptions.url + urlParams);
     // Setup the search call and wait for result
     const options = {
         url: searchUrl,
