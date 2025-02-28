@@ -12,6 +12,10 @@ module.exports = {
     title: 'TEST API GIS',
     description: 'Test API from the GIS department',
     version: '2.0',
+    contact: {
+      name: 'Johnny Blästa',
+      email: 'johnny.blasta@sundsvall.se',
+    }
   },
 
   definitions: {

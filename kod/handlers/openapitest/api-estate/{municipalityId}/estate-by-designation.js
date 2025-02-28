@@ -170,6 +170,9 @@ module.exports.get.apiDoc = {
       description: 'The status of the estate. Defaults to "gällande".'
     }
   ],
+  tags: [
+    'fastigheter'
+  ],
   responses: {
     200: {
       description: 'Responds with a list of designations and their unique identifier',
@@ -183,14 +186,12 @@ module.exports.get.apiDoc = {
     400: {
       description: 'Bad request',
       schema: {
-        type: 'object',
         $ref: '#/definitions/ErrorResponse'
       },
     },
     500: {
       description: 'Server error',
       schema: {
-        type: 'object',
         $ref: '#/definitions/ErrorResponse'
       },
     },
