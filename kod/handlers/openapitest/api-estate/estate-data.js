@@ -318,15 +318,17 @@ module.exports.get.apiDoc = {
       },
     },
     400: {
-      description: 'Bad request',
+      description: 'Server error',
       schema: {
-        type: 'string',
+        type: 'object',
+        $ref: '#/definitions/ErrorResponse'
       },
     },
     500: {
       description: 'Server error',
       schema: {
-        type: 'string',
+        type: 'object',
+        $ref: '#/definitions/ErrorResponse'
       },
     },
   },
