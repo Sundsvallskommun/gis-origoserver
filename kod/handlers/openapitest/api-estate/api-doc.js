@@ -4,14 +4,14 @@ module.exports = {
   swagger: '2.0',
 
   // all routes will now have /api/v1 prefixed.
-  basePath: '/origoserver/api-estate-test/v1',
+  basePath: '/origoserver/api-estate-test/v2',
 
   schemes: ['https'],
   
   info: {
     title: 'TEST API GIS',
     description: 'Test API from the GIS department',
-    version: '1.0',
+    version: '2.0',
   },
 
   definitions: {
@@ -20,6 +20,31 @@ module.exports = {
       properties: {
         error: {
           description: 'The error message.',
+          type: 'array',
+          items: {
+            "$ref": "#/definitions/Error"
+          }
+        }
+
+      }
+    },
+    Error: {
+      type: 'object',
+      properties: {
+        path: {
+          description: 'The path of the error.',
+          type: 'string'
+        },
+        errorCode: {
+          description: 'The error code.',
+          type: 'string'
+        },
+        message: {
+          description: 'A clearification on the error.',
+          type: 'string'
+        },
+        location: {
+          description: 'The location of the error.',
           type: 'string'
         }
       }
