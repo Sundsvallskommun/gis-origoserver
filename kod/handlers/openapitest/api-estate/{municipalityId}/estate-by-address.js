@@ -165,6 +165,9 @@ module.exports = {
         description: 'The status of the address. Defaults to "Gällande"'
       }
     ],
+    tags: [
+      'adresser'
+    ],
     responses: {
       200: {
         description: 'Responds with a list of addresses and their unique estate identifier',
@@ -178,14 +181,12 @@ module.exports = {
       400: {
         description: 'Bad request',
         schema: {
-          type: 'object',
           $ref: '#/definitions/ErrorResponse'
         },
       },
       500: {
         description: 'Server error',
         schema: {
-          type: 'object',
           $ref: '#/definitions/ErrorResponse'
         },
       },

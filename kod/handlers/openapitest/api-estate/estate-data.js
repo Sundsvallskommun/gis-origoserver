@@ -313,21 +313,18 @@ module.exports.get.apiDoc = {
     200: {
       description: 'Responds with the title deeds and owner etc',
       schema: {
-        type: 'object',
         $ref: '#/definitions/EstateData'
       },
     },
     400: {
       description: 'Server error',
       schema: {
-        type: 'object',
         $ref: '#/definitions/ErrorResponse'
       },
     },
     500: {
       description: 'Server error',
       schema: {
-        type: 'object',
         $ref: '#/definitions/ErrorResponse'
       },
     },
