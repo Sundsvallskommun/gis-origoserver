@@ -76,8 +76,6 @@ openapi.initialize({
   app: app,
   paths: [
 		path.resolve(__dirname, 'handlers/openapitest/api-estate'),
-    { path: '/{municipalityId}/estate-by-designation/', module: require('./handlers/openapitest/api-estate/{municipalityId}/estate-by-designation') },
-    { path: '/{municipalityId}/estate-by-address/', module: require('./handlers/openapitest/api-estate/{municipalityId}/estate-by-address') },
   ],
 });
 
