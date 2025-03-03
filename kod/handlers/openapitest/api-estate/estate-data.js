@@ -309,6 +309,9 @@ module.exports.get.apiDoc = {
       type: 'string'
     }
   ],
+  tags: [
+   'fastighetsdata'
+  ],
   responses: {
     200: {
       description: 'Responds with the title deeds and owner etc',

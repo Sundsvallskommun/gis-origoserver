@@ -106,6 +106,21 @@ module.exports = {
     const fullUrl = req.protocol + '://' + req.get('host') + req.url;
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
+    let = validationError = false;
+    if(String(req.params.municipalityId).length !== 4) {
+      validationError = true;
+      res.status(400).json({
+        status: 400,
+        errors: [
+          {
+            path: 'municipalityId',
+            errorCode: 'type.openapi.requestValidation',
+            message: 'must be a 4-digit number',
+            location: 'path'
+          }
+        ]
+      });
+    }
     const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
     let designation = '';
     let statusDesignation = 'gällande';
@@ -127,12 +142,14 @@ module.exports = {
       if (params.get('designation').match(regex) !== null) {
         designation = params.get('designation');     
       } else {
+        validationError = true;
         res.status(400).json({error: 'Invalid in parameter designation'});
       }    
     } else {
+      validationError = true;
       res.status(400).json({error: 'Missing required parameter designation'});
     }
-    if (designation.length > 0) {
+    if (designation.length > 0 && !validationError) {
       doGet(req, res, designation, municipalityId, statusDesignation, maxHits);
     }    
   },
@@ -146,7 +163,8 @@ module.exports.get.apiDoc = {
       in: 'path',
       name: 'municipalityId',
       required: true,
-      type: 'integer'
+      pattern: '[0-2]{1}[0-9]{3}',
+      type: 'string'
     },
     {
       in: 'query',
