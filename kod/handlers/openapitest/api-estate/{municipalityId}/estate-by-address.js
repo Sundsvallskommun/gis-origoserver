@@ -141,7 +141,8 @@ module.exports = {
         in: 'path',
         name: 'municipalityId',
         required: true,
-        type: 'integer'
+        pattern: '[0-2]{1}[0-9]{3}',
+        type: 'string'
       },
       {
         in: 'query',
