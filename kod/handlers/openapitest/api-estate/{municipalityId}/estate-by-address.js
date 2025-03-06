@@ -5,6 +5,7 @@ const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9, ]+$/;
+const regexNumbers = /^[0-9]+$/;
 
 async function doGet(req, res, address, municipalityId, statusAddress, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
@@ -102,6 +103,7 @@ module.exports = {
     const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
     let address = '';
     let statusAddress = 'Gällande';
+    let maxHits = '100';
     if (params.has('status')) {
       statusAddress = params.get('status');
     } else {
@@ -113,8 +115,6 @@ module.exports = {
       } else {
         maxHits = '100';
       }     
-    } else {
-      maxHits = '100';
     }
     if (params.has('address')) {
       if (params.get('address').match(regex) !== null) {
