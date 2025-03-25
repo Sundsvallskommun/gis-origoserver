@@ -72,6 +72,14 @@ openapi.initialize({
 });
 
 openapi.initialize({
+  apiDoc: require('./handlers/openapi/api-estate-v2/api-doc.js'),
+  app: app,
+  paths: [
+		path.resolve(__dirname, 'handlers/openapi/api-estate-v2/'),
+  ],
+});
+
+openapi.initialize({
   apiDoc: require('./handlers/openapitest/api-estate/api-doc.js'),
   app: app,
   paths: [
