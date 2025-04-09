@@ -354,7 +354,7 @@ function concatResult(features) {
     const postort = feature.properties.adressplatsattribut.postort;
     const koordinater = feature.geometry.coordinates;
 
-    result.push([objektidentitet_1, popularnamn + ' ' + faststalltNamn + ' ' + adressplatsnummer + bokstavstillagg + ', ' + postort, koordinater[0], koordinater[1], objektidentitet_2]);
+    result.push([objektidentitet_1, faststalltNamn + ' ' + adressplatsnummer + bokstavstillagg + ', ' + postort + ' (' + popularnamn + ')', koordinater[0], koordinater[1], objektidentitet_2]);
   })
 
   return result;
