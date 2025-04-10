@@ -136,7 +136,7 @@ app.use('/origoserver/', routes);
 app.use('/admin', adminRouter);
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
-  conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/lmap/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
+  conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/origoserver/lmapiproxy/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
 }
 app.use('/origoserver/auth/saml', authSamlRouter);
 // Sundsvall special felhanterare
