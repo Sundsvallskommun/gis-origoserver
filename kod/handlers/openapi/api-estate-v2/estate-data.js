@@ -288,6 +288,9 @@ module.exports = {
     const fullUrl = req.protocol + '://' + req.get('host') + req.url;
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
+    const configOptions = Object.assign({}, conf[proxyUrl]);
+    var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
+    console.log(ip);
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
