@@ -290,14 +290,17 @@ module.exports = {
     const params = parsedUrl.searchParams;
     const configOptions = Object.assign({}, conf[proxyUrl]);
     var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
-    console.log(ip);
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
     } else {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
-    doGet(req, res, objectidentifier);
+    if (!ip.includes(configOptions.allowedIP)) {
+      res.status(400).json({error: 'Request not allowed from this IP!'});
+    } else {
+      doGet(req, res, objectidentifier);
+    }
   },
 };
 
