@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
 const getUuid = require('uuid-by-string');
+const axios = require('axios').default;
 
 let configOptions = {};
 
@@ -107,20 +108,46 @@ function listAllAttachments(req, res, next) {
  * @param {any} next
  * @returns {Promise<void>}
  */
-function fetchDoc(req, res, next) {
-    const dir = path.join(configOptions.filepath, req.params.layer, req.params.object);
-    const groups = fs.readdirSync(dir);
-    groups.forEach(group => {
-        const groupPath = path.join(dir, group);
-        const fileNames = fs.readdirSync(groupPath);
-
-        fileNames.forEach(filename => {
-            if (getUuid(`${group}_${filename}`, 5) === req.params.id) {
-                const filePath = path.join(dir, group, filename);
-                 res.sendFile(filePath);
+async function fetchDoc(req, res, next) {
+    //process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    console.log(req.params.code);
+    if (typeof req.params.code !== 'undefined') {
+        console.log('code');
+        await axios.post('https://internkarta.sundsvall.se/origoserver/auth/access_token', {
+            grant_type: 'authorization_code',
+            code: req.params.code,
+            redirect_uri: req.protocol + '://' + req.get('host') + req.originalUrl
+        },
+        {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
             }
+        })
+        .then(function (resToken) {
+            console.log(resToken);
+            console.log(resToken.access_token);
+
+            const dir = path.join(configOptions.filepath, req.params.layer, req.params.object);
+            const groups = fs.readdirSync(dir);
+            groups.forEach(group => {
+                const groupPath = path.join(dir, group);
+                const fileNames = fs.readdirSync(groupPath);
+
+                fileNames.forEach(filename => {
+                    if (getUuid(`${group}_${filename}`, 5) === req.params.id) {
+                        const filePath = path.join(dir, group, filename);
+                        res.sendFile(filePath);
+                    }
+                });
+            });
+        })
+        .catch(function (error) {
+            console.log(error);
         });
-    });
+    } else {
+        console.log('redirect');
+        res.redirect('https://internkarta.sundsvall.se/origoserver/auth/authorize?state=attachment');
+    }
 }
 
 /**
