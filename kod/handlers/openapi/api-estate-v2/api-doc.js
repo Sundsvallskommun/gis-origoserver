@@ -11,7 +11,7 @@ module.exports = {
   info: {
     title: 'API GIS Estate',
     description: 'Estate API from the GIS department',
-    version: '2.0',
+    version: '2.0.1',
     contact: {
       name: 'Johnny Blästa',
       email: 'johnny.blasta@sundsvall.se',
