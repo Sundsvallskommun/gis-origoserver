@@ -4,7 +4,7 @@ const simpleStorage = require('../../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstate';
-const regex = /^[a-zA-ZäöåÄÖÅ0-9:, ]+$/;
+const regex = /^[a-zA-ZäöåÄÖÅ0-9:,\- ]+$/;
 const regexNumbers = /^[0-9]+$/;
 
 async function doGet(req, res, designation, municipalityId, statusDesignation, maxHits) {
