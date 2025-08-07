@@ -1,11 +1,5 @@
 const conf = require('../../conf/config');
-const { Issuer, custom } = require('openid-client');
-
-if (conf.auth.http_timeout) {
-  custom.setHttpOptionsDefaults({
-    timeout: conf.auth.http_timeout
-  });
-}
+const { Issuer } = require('openid-client');
 
 let client = undefined;
 
@@ -19,7 +13,7 @@ const getOpenidClient = async () => {
     client_secret: conf.auth.client_secret,
     redirect_uris: conf.auth.redirect_uris,
     response_types: ['code'],
-    grant_types: conf.auth.grant_types ?? ['authorization_code', 'refresh_token']
+    grant_types: ['authorization_code', 'refresh_token']
   });
   return client;
 };
