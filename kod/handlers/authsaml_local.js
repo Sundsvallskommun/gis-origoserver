@@ -5,7 +5,6 @@ var samlRouter = express.Router();
 var conf = require('../conf/config');
 var saml2 = require('saml2-js');
 var fs = require('fs');
-var bodyParser = require('body-parser');
 var proxyUrl = 'authsaml';
 var name_id = '';
 var session_index = '';
