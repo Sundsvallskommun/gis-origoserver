@@ -37,7 +37,7 @@
     "node-fetch": "^3.3.2",
     "node-gyp": "^11.3.0",
     "odbc": "^2.4.9",
-    "openid-client": "^5.6.4",
+    "openid-client": "^6.6.3",
     "orm": "^8.0.1",
     "proj4": "^2.19.10",
     "query-overpass": "^1.5.5",

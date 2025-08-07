@@ -146,10 +146,6 @@ app.use((err, req, res, next) => {
     errorSent = true;
     res.status(err.status).json({ error: err.errors }); // Returnera fel i JSON-format
   }
-  if ('statusCode' in err) {
-    errorSent = true;
-    res.status(err.statusCode).json({ error: err.error }); // Returnera fel i JSON-format
-  }
 });
 if (!errorSent) {
   app.use(errors);
