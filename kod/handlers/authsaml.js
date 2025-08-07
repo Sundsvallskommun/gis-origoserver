@@ -5,7 +5,6 @@ const samlRouter = express.Router();
 const conf = require('../conf/config');
 const saml2 = require('saml2-js');
 const fs = require('fs');
-const bodyParser = require('body-parser');
 var request = require('request');
 var rp = require('request-promise');
 var Bluebird = require('bluebird');

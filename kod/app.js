@@ -1,6 +1,5 @@
 var express = require('express');
 var path = require('path');
-var bodyParser = require('body-parser');
 var cors = require('cors');
 const rateLimit = require('express-rate-limit');
 var openapi = require('express-openapi');
@@ -126,8 +125,8 @@ app.get('/origoserver/x-forwarded-for', (request, response) => response.send(req
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(bodyParser.json({limit: "50mb"}));
-app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
+app.use(express.json({limit: "50mb"}));
+app.use(express.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit:50000}));
 app.use(express.static(path.join(__dirname, 'public')));
