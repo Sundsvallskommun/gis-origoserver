@@ -13,7 +13,7 @@ const getOpenidClient = async () => {
     client_secret: conf.auth.client_secret,
     redirect_uris: conf.auth.redirect_uris,
     response_types: ['code'],
-    grant_types: ['authorization_code', 'refresh_token']
+    grant_types: conf.auth.grant_types ?? ['authorization_code', 'refresh_token']
   });
   return client;
 };
