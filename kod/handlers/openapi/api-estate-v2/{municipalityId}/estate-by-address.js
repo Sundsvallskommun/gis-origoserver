@@ -155,7 +155,8 @@ module.exports = {
         in: 'query',
         name: 'maxHits',
         required: false,
-        type: 'integer',
+        pattern: '[0-9]',
+        type: 'string',
         description: 'The maximal number of hits returned. Defaults to 100'
       },
       {
