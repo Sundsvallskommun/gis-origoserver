@@ -67,6 +67,30 @@ module.exports = {
       },
       description: "Map with name-value pairs"
     },
+    Name: {
+      type: 'object',
+      additionalProperties: {
+          type: "string",
+          description: "Map with name-value pairs"
+      },
+      description: "Map with name-value pairs"
+    },
+    Report: {
+      type: 'object',
+      additionalProperties: {
+          type: "string",
+          description: "Map with name-value pairs"
+      },
+      description: "Map with name-value pairs"
+    },
+    MapLink: {
+      type: 'object',
+      additionalProperties: {
+          type: "string",
+          description: "Map with name-value pairs"
+      },
+      description: "Map with name-value pairs"
+    },
   },
 
   // paths are derived from args.routes.  These are filled in by fs-routes.
