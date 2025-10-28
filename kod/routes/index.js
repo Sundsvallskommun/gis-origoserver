@@ -37,6 +37,7 @@ var fbwebbProxy = require('../handlers/fbwebbproxy');
 var ngp = require('../handlers/ngp');
 var attachment = require('../handlers/attachment');
 var lmCommunityAssociation = require('../handlers/lmcommunityassociation');
+var getStuff = require('../handlers/getstuff');
 
 /* GET start page. */
 router.get('/', function (req, res) {
@@ -81,5 +82,6 @@ router.all('/getimage', getImage);
 router.all('/fbwebbproxy/*splat', fbwebbProxy);
 router.use('/ngp', ngp);
 router.use('/attachment', attachment);
+router.all('/getstuff', getStuff['getStuff']);
 
 module.exports = router;

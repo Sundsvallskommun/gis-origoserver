@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:24
 MAINTAINER Johnny Blaesta<johnny.blasta@sundsvall.se>
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN curl https://packages.microsoft.com/config/debian/9/prod.list > /etc/apt/sources.list.d/mssql-release.list

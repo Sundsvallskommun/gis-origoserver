@@ -12,6 +12,7 @@ var mapStateRouter = require('./routes/mapstate');
 var errors = require('./routes/errors');
 var conf = require('./conf/config');
 var authSamlRouter = require('./handlers/authsaml');
+const bodyParser = require('body-parser');
 
 var app = express();
 
@@ -24,6 +25,8 @@ const limiter = rateLimit({
 
 // apply rate limiter to all requests
 app.use(limiter);
+
+app.use(bodyParser.json())
 
 if (conf['cors']) {
   var configOptions = Object.assign({}, conf['cors']);
@@ -58,7 +61,7 @@ openapi.initialize({
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
 		path.resolve(__dirname, 'handlers/openapi/api-nyko'),
 		path.resolve(__dirname, 'handlers/openapi/api-precheck'),
-    //path.resolve(__dirname, 'handlers/openapi/api-routes2'),
+    path.resolve(__dirname, 'handlers/openapi/api-save'),
   ],
 });
 
