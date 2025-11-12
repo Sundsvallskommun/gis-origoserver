@@ -23,7 +23,9 @@ function doUpdate(req, res, update) {
         },
         options: {
           database: configOptions.db_database,
-          trustServerCertificate: configOptions.db_trust_server_certificate
+          trustServerCertificate: configOptions.db_trust_server_certificate,
+          connectionTimeout: configOptions.db_connection_timeout, // Set connection timeout in milliseconds
+          requestTimeout: configOptions.db_request_timeout
         }
       };
 
