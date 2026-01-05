@@ -74,11 +74,18 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
 
 function concatAddress(feature) {
   let adress = {};
+  let faststalltNamn = '';
 
   if ('id' in feature) {
     adress['objektidentitet'] = feature.properties.objektidentitet;
-    adress['kommun'] = feature.properties.adressomrade.kommundel.kommun;
-    const faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    if ('adressomrade' in feature.properties) {
+      adress['kommun'] = feature.properties.adressomrade.kommundel.kommun;
+      faststalltNamn = feature.properties.adressomrade.faststalltNamn;
+    }
+    if ('gardsadressomrade' in feature.properties) {
+      adress['kommun'] = feature.properties.gardsadressomrade.adressomrade.kommundel.kommun;
+      faststalltNamn = feature.properties.gardsadressomrade.adressomrade.faststalltNamn + ' ' + feature.properties.gardsadressomrade.faststalltNamn;
+    }
     const adressplatsnummer = feature.properties.adressplatsattribut.adressplatsbeteckning.adressplatsnummer || '';
     const bokstavstillagg = feature.properties.adressplatsattribut.adressplatsbeteckning.bokstavstillagg || '';
     let popularnamn = '';
