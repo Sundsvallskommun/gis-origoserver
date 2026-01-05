@@ -210,7 +210,6 @@ async function doSearch(req, res, configOptions, q, countynr, srid, format) {
     bodyRoadNr = bodyRoadNr.replace("$countynr$", '');
   }
   const bodyQuery = getSearchBody(featureType, q, countynr, changeid);
-  console.log(bodyQuery);
 
   try {
     const response = await fetchWithBody(bodyRoadNr);
