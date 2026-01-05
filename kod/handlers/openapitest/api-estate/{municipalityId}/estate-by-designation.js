@@ -30,17 +30,16 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
     })]).then(([req1]) => {
       const registerenhetIdArr = [];
       if (req1.data.length > 0) {
-        req1.data.forEach(element => {
+        /* req1.data.forEach(element => {
           responseArray.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
         });
         responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-        res.status(200).json(responseArray);  
-        /* req1.data.forEach(element => {
+        res.status(200).json(responseArray);  */
+        req1.data.forEach(element => {
           if (typeof element.registerenhet !== 'undefined') {
             registerenhetIdArr.push(element.registerenhet);
           }          
         });
-        console.log('After push' + new Date().toISOString());
         Promise.all([axios({
           method: 'POST',
           url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
@@ -51,18 +50,19 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
            },
            data: registerenhetIdArr
         })]).then(([reqPost]) => {
-          console.log('After registerenhet' + new Date().toISOString());
           reqPost.data.features.forEach(element => {
             const addressObj = concatAddress(element);
             responseArray.push({ 
               address: addressObj.adress, 
               designation: addressObj.registerenhetsreferensBeteckning, 
-              objectidentifier: element.properties.registerenhetsreferens.objektidentitet
+              objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
+              districtname: addressObj.distriktsnamn,
+              districtcode: addressObj.distriktskod
             });
           });
           responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
           res.status(200).json(responseArray);
-        });    */
+        });
       } else {
         res.status(200).json(responseArray);
       }
@@ -97,6 +97,10 @@ function concatAddress(feature) {
     adress['adressplatspunkt'] = feature.properties.adressplatsattribut.adressplatspunkt;
     adress['registerenhetsreferensBeteckning'] = feature.properties.registerenhetsreferens.beteckning;
     adress['registerenhetsreferensObjektidentitet'] = feature.properties.registerenhetsreferens.objektidentitet;
+    if ('distrikttillhorighet' in feature.properties) {
+      adress['distriktsnamn'] = feature.properties.distrikttillhorighet.distriktsnamn;
+      adress['distriktskod'] = feature.properties.distrikttillhorighet.distriktskod;
+    }
   }
   return adress;
 }
