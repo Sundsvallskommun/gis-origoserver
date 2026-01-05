@@ -5,7 +5,6 @@ var transformCoordinates = require('../lib/utils/transformcoordinates');
 const url = require('url');
 const wkt = require('wkt');
 const { parse } = require('wkt');
-//var Promise = require('bluebird');
 
 var objectIds;
 var username;
@@ -62,13 +61,6 @@ const tvApi = async (req, res) => {
 module.exports = tvApi;
 
 function doGet(req, res, configOptions, srid, output) {
-  //var parseString = require('xml2js').parseString;
-  //var xmlDoc = "";
-  //parseString(configOptions.query, function (err, result) {
-    //  console.dir(result);
-    //  xmlDoc = result;
-  //});
-
   // Setup the search call and wait for result
   const options = {
     url: encodeURI(configOptions.url),

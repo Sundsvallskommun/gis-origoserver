@@ -10,12 +10,23 @@ var srid;
 var validProjs = ["3006", "3007", "3008", "3009", "3010", "3011", "3012", "3013", "3014", "3015", "3016", "3017", "3018", "3857", "4326"];
 let scope;
 var proxyUrl = 'tvroadnumbers';
+const configOptions = { ...config[proxyUrl] };
   
-// Do the request in proper order
+
+/**
+ * Check parameters and direct to proper handling
+ * 
+ * @async
+ * @function
+ * @name tvRoadnumbers
+ * @kind variable
+ * @param {any} req
+ * @param {any} res
+ * @returns {Promise<any>}
+ */
 const tvRoadnumbers = async (req, res) => {
 
   if (config[proxyUrl]) {
-    const configOptions = { ...config[proxyUrl] };
     scope = configOptions.scope;
     const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
 
@@ -23,11 +34,13 @@ const tvRoadnumbers = async (req, res) => {
     const q = parsedUrl.searchParams.get('q') || '';
     const x = parsedUrl.searchParams.get('x') || '';
     const y = parsedUrl.searchParams.get('y') || '';
+    const Feature_Oid = parsedUrl.searchParams.get('Feature_Oid') || '';
     const countynr = parsedUrl.searchParams.get('countynr') || '';
+    const featureType = parsedUrl.searchParams.get('featureType') || '';
     const format = parsedUrl.searchParams.get('format') || 'wkt';
 
-    if (q === '' && x === '' && y === '') {
-      console.log('No query or coords specified!');
+    if (q === '' && x === '' && y === '' && Feature_Oid === '') {
+      console.log('No query, coords or Feature_Oid specified!');
       return res.status(400).send({});
     }
 
@@ -37,7 +50,9 @@ const tvRoadnumbers = async (req, res) => {
     }
 
     if (config[proxyUrl]) {
-      if (x !== '') {
+      if (Feature_Oid !== '') {
+        getFeature(req, res, configOptions, Feature_Oid, featureType, srid, format);        
+      } else if (x !== '') {
         doLookup(req, res, configOptions, x, y, srid, format);        
       } else {
         doSearch(req, res, configOptions, q, countynr, srid, format);        
@@ -49,33 +64,120 @@ const tvRoadnumbers = async (req, res) => {
   }
 }
 
+/**
+ * Setup and request and return it
+ * 
+ * @async
+ * @function
+ * @name fetchWithBody
+ * @kind variable
+ * @param {any} bodyContent
+ * @returns {Promise<axios.AxiosResponse<any, any>>}
+ */
+const fetchWithBody = async (bodyContent) => {
+  const options = {
+    method: 'POST',
+    url: encodeURI(configOptions.url),
+    headers: {
+      'User-Agent': 'Axios',
+      'Content-Type': 'text/xml',
+      'Content-Length': Buffer.byteLength(bodyContent)
+    },
+    data: bodyContent
+  };
+
+  return axios(options);
+};
+
+function getSearchBody(featureType, q, countynr, changeid) {
+  const bodySyntax = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="$featureType$" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
+      <FILTER>
+          <EQ name="Huvudnummer" value="$roadnr$" />$countynr$<EQ name="Deleted" value="false" />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  let bodyReturn = bodySyntax;
+  bodyReturn = bodyReturn.replace("$changeid$", changeid)
+                         .replace("$roadnr$", q)
+                         .replace("$featureType$", featureType);
+  if (countynr !== '') {
+    bodyReturn = bodyReturn.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
+  } else {
+    bodyReturn = bodyReturn.replace("$countynr$", '');
+  }
+
+  return bodyReturn;
+}
+
 // Export the module
 module.exports = tvRoadnumbers;
 
-async function doLookup(req, res, configOptions, x, y, srid, format) {
-  let body = configOptions.bodyRoadNrCoords;
-  const coords = transformCoordinates(srid, '3006', [Number(x), Number(y)]);
-  body = body.replace("$coords$", `${coords[0]} ${coords[1]}`);
-             
-  const fetchWithBody = async (bodyContent) => {
-    const options = {
-      method: 'POST',
-      url: encodeURI(configOptions.url),
-      headers: {
-        'User-Agent': 'Axios',
-        'Content-Type': 'text/xml',
-        'Content-Length': Buffer.byteLength(bodyContent)
-      },
-      data: bodyContent
-    };
-
-    return axios(options);
-  };
+async function getFeature(req, res, configOptions, Feature_Oid, featureType, srid, format) {
+  const bodyQuery = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="${featureType}" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="1">
+      <FILTER>
+          <EQ name='Feature_Oid' value='${Feature_Oid}' />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
 
   try {
-    const response = await fetchWithBody(body);
+    const responseFeature = await fetchWithBody(bodyQuery);
 
-    const resultObj = response.data.RESPONSE.RESULT[0];
+    const resultObj = responseFeature.data.RESPONSE.RESULT[0];
+
+    if (format.toLowerCase() === 'geojson') {
+      res.send(createGeojson(resultObj[featureType], configOptions, srid, true));
+    } else {
+      res.send(resultObj);
+    }
+  } catch (err) {
+    console.log(err);
+    console.log('ERROR doSearch!');
+    res.status(400).send({ error: 'ERROR doSearch!' });
+  }
+}
+
+async function doLookup(req, res, configOptions, x, y, srid, format) {
+  const coords = transformCoordinates(srid, '3006', [Number(x), Number(y)]);
+  const bodyRoadNr = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="Vägnummer" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="1">
+      <FILTER>
+          <NEAR name="Geometry.WKT-SWEREF99TM-3D" value="${coords[0]} ${coords[1]}" maxdistance="${configOptions.maxdistance}" />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  const bodyStreetname = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="Gatunamn" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="1">
+      <FILTER>
+          <NEAR name="Geometry.WKT-SWEREF99TM-3D" value="${coords[0]} ${coords[1]}" maxdistance="${configOptions.maxdistance}" />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  const bodyOtherRoads = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="ÖvrigtVägnamn" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="1">
+      <FILTER>
+          <NEAR name="Geometry.WKT-SWEREF99TM-3D" value="${coords[0]} ${coords[1]}" maxdistance="${configOptions.maxdistance}" />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+
+  try {
+    const responseRoadNr = await fetchWithBody(bodyRoadNr);
+    const responseStreetname = await fetchWithBody(bodyStreetname);
+    const responseOtherRoads = await fetchWithBody(bodyOtherRoads);
+
+    const resultObj = {
+      'Vägnummer':responseRoadNr.data.RESPONSE.RESULT[0].Vägnummer,
+      'Gatunamn':responseStreetname.data.RESPONSE.RESULT[0].Gatunamn,
+      'ÖvrigtVägnamn':responseOtherRoads.data.RESPONSE.RESULT[0].ÖvrigtVägnamn      
+    };
 
     if (format.toLowerCase() === 'geojson') {
       res.send(createGeojson(resultObj.Vägnummer, configOptions, srid, true));
@@ -84,46 +186,42 @@ async function doLookup(req, res, configOptions, x, y, srid, format) {
     }
   } catch (err) {
     console.log(err);
-    console.log('ERROR doLookup!');
-    res.status(400).send({ error: 'ERROR doLookup!'});  }
-
+    console.log('ERROR doSearch!');
+    res.status(400).send({ error: 'ERROR doSearch!' });
+  }
 }
 
 async function doSearch(req, res, configOptions, q, countynr, srid, format) {
-  let body = configOptions.bodyRoadNrSearch;
-  body = body.replace("$changeid$", "1")
-             .replace("$roadnr$", q);
+  const bodySyntax = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="$featureType$" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
+      <FILTER>
+          <EQ name="Huvudnummer" value="$roadnr$" />$countynr$<EQ name="Deleted" value="false" />
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  let bodyRoadNr = bodySyntax;
+  bodyRoadNr = bodyRoadNr.replace("$changeid$", "1")
+                         .replace("$roadnr$", q)
+                         .replace("$featureType$", "Vägnummer");
   if (countynr !== '') {
-    body = body.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
+    bodyRoadNr = bodyRoadNr.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
   } else {
-    body = body.replace("$countynr$", '');
+    bodyRoadNr = bodyRoadNr.replace("$countynr$", '');
   }
-             
-  const fetchWithBody = async (bodyContent) => {
-    const options = {
-      method: 'POST',
-      url: encodeURI(configOptions.url),
-      headers: {
-        'User-Agent': 'Axios',
-        'Content-Type': 'text/xml',
-        'Content-Length': Buffer.byteLength(bodyContent)
-      },
-      data: bodyContent
-    };
-
-    return axios(options);
-  };
+  const bodyQuery = getSearchBody(featureType, q, countynr, changeid);
 
   try {
-    const response = await fetchWithBody(body);
+    const response = await fetchWithBody(bodyRoadNr);
 
     const resultObj = response.data.RESPONSE.RESULT[0];
 
     if (response.status === 206) {
       const lastChangeId = resultObj.INFO.LASTCHANGEID;
 
-      let newBody = configOptions.bodyRoadNrSearch.replace("$changeid$", lastChangeId)
-                                      .replace("$roadnr$", q);
+      let newBody = bodySyntax.replace("$changeid$", lastChangeId)
+                        .replace("$roadnr$", q)
+                        .replace("$featureType$", "Vägnummer");
       if (countynr !== '') {
         newBody = newBody.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
       } else {
@@ -136,13 +234,13 @@ async function doSearch(req, res, configOptions, q, countynr, srid, format) {
       // Concatenate the Vägnummer arrays
       const combinedVagnummer = resultObj.Vägnummer.concat(resultObj2.Vägnummer);
       if (format.toLowerCase() === 'geojson') {
-        res.send([createGeojson(combinedVagnummer, configOptions, srid)]);
+        res.send(createGeojson(combinedVagnummer, configOptions, srid));
       } else {
         res.send(createWktCollection(combinedVagnummer, configOptions, srid));
       }
     } else {
       if (format.toLowerCase() === 'geojson') {
-        res.send([createGeojson(resultObj.Vägnummer, configOptions, srid)]);
+        res.send(createGeojson(resultObj.Vägnummer, configOptions, srid));
       } else {
         res.send(createWktCollection(resultObj.Vägnummer, configOptions, srid));
       }
@@ -166,22 +264,28 @@ async function doSearch(req, res, configOptions, q, countynr, srid, format) {
  */
 function reprojektWKT(wkt, srid) {
   // Här specificeras en enkel parsning av WKT, vi tar bort "LINESTRING" eller "POINT" och hanterar bara koordinaterna
-  const regex = /^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s*\((.*)\)$/;
+  const regex = /^(POINT Z|POINT|LINESTRING Z|LINESTRING|POLYGON Z|POLYGON|MULTIPOINT Z|MULTIPOINT|MULTILINESTRING Z|MULTILINESTRING|MULTIPOLYGON Z|MULTIPOLYGON)\s*\((.*)\)$/;
   const match = wkt.match(regex);
 
   if (!match) {
     console.log('Invalid WKT!');
-    res.status(400).send({ error: 'Invalid WKT!'});
   }
 
   const geomType = match[1];
   const coordsString = match[2];
-  
   // Dela upp koordinaterna i en array av koordinater
-  const coordsArray = coordsString.split(',').map(coord => {
-    const [x, y] = coord.trim().split(' ').map(Number);
-    return transformCoordinates('3006', srid, [x, y]); // Reprojektera koordinaterna
-  });
+  let coordsArray = [];
+  if (geomType.endsWith(' Z')) {
+    coordsArray = coordsString.split(',').map(coord => {
+      const [x, y, z] = coord.trim().split(' ').map(Number);
+      return transformCoordinates('3006', srid, [x, y, z]); // Reprojektera koordinaterna
+    });
+  } else {
+    coordsArray = coordsString.split(',').map(coord => {
+      const [x, y] = coord.trim().split(' ').map(Number);
+      return transformCoordinates('3006', srid, [x, y]); // Reprojektera koordinaterna
+    });
+  }
 
   // Återskapa WKT-strukturen
   const newCoordsString = coordsArray.map(coord => coord.join(' ')).join(', ');
@@ -275,7 +379,11 @@ function createGeojson(entities, configOptions, srid, section = false) {
     let hasGeometry = false;
     tempEntity['type'] = 'Feature';
     if ("Geometry" in entity) {
-      tempEntity['geometry'] = parse(entity.Geometry['WKT-SWEREF99TM-3D']);
+      if (srid !== '3006') {
+        tempEntity['geometry'] = parse(reprojektWKT(entity.Geometry['WKT-SWEREF99TM-3D'], srid));
+      } else {
+        tempEntity['geometry'] = parse(entity.Geometry['WKT-SWEREF99TM-3D']);
+      }
       hasGeometry = true;
     } else {
       hasGeometry = false;
