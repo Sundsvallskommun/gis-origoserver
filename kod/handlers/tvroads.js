@@ -9,7 +9,7 @@ const { parse } = require('wkt');
 var srid;
 var validProjs = ["3006", "3007", "3008", "3009", "3010", "3011", "3012", "3013", "3014", "3015", "3016", "3017", "3018", "3857", "4326"];
 let scope;
-var proxyUrl = 'tvroadnumbers';
+var proxyUrl = 'tvroads';
 const configOptions = { ...config[proxyUrl] };
   
 
@@ -24,7 +24,7 @@ const configOptions = { ...config[proxyUrl] };
  * @param {any} res
  * @returns {Promise<any>}
  */
-const tvRoadnumbers = async (req, res) => {
+const tvRoads = async (req, res) => {
 
   if (config[proxyUrl]) {
     scope = configOptions.scope;
@@ -90,29 +90,114 @@ const fetchWithBody = async (bodyContent) => {
 };
 
 function getSearchBody(featureType, q, countynr, changeid) {
-  const bodySyntax = `<REQUEST>
+  const bodySyntaxRoadNr = `<REQUEST>
     <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
-    <QUERY objecttype="$featureType$" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
+    <QUERY objecttype="Vägnummer" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
       <FILTER>
           <EQ name="Huvudnummer" value="$roadnr$" />$countynr$<EQ name="Deleted" value="false" />
       </FILTER>
     </QUERY>
   </REQUEST>`;
-  let bodyReturn = bodySyntax;
-  bodyReturn = bodyReturn.replace("$changeid$", changeid)
-                         .replace("$roadnr$", q)
-                         .replace("$featureType$", featureType);
-  if (countynr !== '') {
-    bodyReturn = bodyReturn.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
-  } else {
-    bodyReturn = bodyReturn.replace("$countynr$", '');
+  const bodySyntaxStreetname = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="Gatunamn" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
+      <FILTER>
+          <LIKE name='Namn' value='/^$name$/' />
+          <EQ name="Deleted" value="false" />
+          <WITHIN name="Geometry.WKT-SWEREF99TM-3D" shape="box" value="${configOptions.bbox}"/>
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  const bodySyntaxOtherRoads = `<REQUEST>
+    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
+    <QUERY objecttype="ÖvrigtVägnamn" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
+      <FILTER>
+          <LIKE name='Namn' value='/^$name$/' />
+          <EQ name="Deleted" value="false" />
+          <WITHIN name="Geometry.WKT-SWEREF99TM-3D" shape="box" value="${configOptions.bbox}"/>
+      </FILTER>
+    </QUERY>
+  </REQUEST>`;
+  let bodyReturn = '';
+  switch (featureType) {
+    case 'Vägnummer':
+      bodyReturn = bodySyntaxRoadNr;
+      bodyReturn = bodyReturn.replace("$changeid$", changeid)
+                      .replace("$roadnr$", q);
+      if (countynr !== '') {
+        bodyReturn = bodyReturn.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
+      } else {
+        bodyReturn = bodyReturn.replace("$countynr$", '');
+      }
+      break;
+    case 'Gatunamn':
+      bodyReturn = bodySyntaxStreetname;
+      bodyReturn = bodyReturn.replace("$changeid$", changeid)
+                      .replace("$name$", q);
+      break;
+    case 'ÖvrigtVägnamn':
+      bodyReturn = bodySyntaxOtherRoads;
+      bodyReturn = bodyReturn.replace("$changeid$", changeid)
+                      .replace("$name$", q);
+      break;
+  
+    default:
+      break;
   }
 
   return bodyReturn;
 }
 
+async function handleResponse(response, configOptions, q, countynr, srid, format) {
+  let returnValue = {};
+
+  const resultObj = response.data.RESPONSE.RESULT[0];
+  let roads = null;
+  let foundKey = null;
+
+  for (let key of ['Vägnummer', 'Gatunamn', 'ÖvrigtVägnamn']) {
+      if (resultObj.hasOwnProperty(key)) {
+          roads = resultObj[key];
+          foundKey = key;
+          break;
+      }
+  }
+
+  switch (response.status) {
+    case 200:
+      if (format.toLowerCase() === 'geojson') {
+        returnValue = createGeojson(roads, configOptions, srid, foundKey);
+      } else {
+        returnValue = createWktCollection(roads, configOptions, srid, foundKey);
+      }
+      break;
+    case 206:
+      const lastChangeId = resultObj.INFO.LASTCHANGEID;
+
+      const newBodyQueryRoadNr = getSearchBody("Vägnummer", q, countynr, lastChangeId);
+      console.log(newBodyQueryRoadNr);
+
+      const response2 = await fetchWithBody(newBodyQueryRoadNr);
+      const resultObj2 = response2.data.RESPONSE.RESULT[0];
+
+      // Concatenate the Vägnummer arrays
+      const combinedVagnummer = resultObj.Vägnummer.concat(resultObj2.Vägnummer);
+      if (format.toLowerCase() === 'geojson') {
+        returnValue = createGeojson(combinedVagnummer, configOptions, srid);
+      } else {
+        returnValue = createWktCollection(combinedVagnummer, configOptions, srid);
+      }
+      break;
+  
+    default:
+      break;
+  }
+
+  return returnValue;
+};
+
 // Export the module
-module.exports = tvRoadnumbers;
+module.exports = tvRoads;
 
 async function getFeature(req, res, configOptions, Feature_Oid, featureType, srid, format) {
   const bodyQuery = `<REQUEST>
@@ -192,59 +277,27 @@ async function doLookup(req, res, configOptions, x, y, srid, format) {
 }
 
 async function doSearch(req, res, configOptions, q, countynr, srid, format) {
-  const bodySyntax = `<REQUEST>
-    <LOGIN authenticationkey="${configOptions.authenticationkey}"/>
-    <QUERY objecttype="$featureType$" namespace="vägdata.nvdb_dk_o" schemaversion="1.2" limit="800"  changeid="$changeid$">
-      <FILTER>
-          <EQ name="Huvudnummer" value="$roadnr$" />$countynr$<EQ name="Deleted" value="false" />
-      </FILTER>
-    </QUERY>
-  </REQUEST>`;
-  let bodyRoadNr = bodySyntax;
-  bodyRoadNr = bodyRoadNr.replace("$changeid$", "1")
-                         .replace("$roadnr$", q)
-                         .replace("$featureType$", "Vägnummer");
-  if (countynr !== '') {
-    bodyRoadNr = bodyRoadNr.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
-  } else {
-    bodyRoadNr = bodyRoadNr.replace("$countynr$", '');
-  }
-  const bodyQuery = getSearchBody(featureType, q, countynr, changeid);
+  const bodyQueryRoadNr = getSearchBody("Vägnummer", q, countynr, "1");
+  const bodyQueryStreetname = getSearchBody("Gatunamn", q, countynr, "1");
+  const bodyQueryOtherRoads = getSearchBody("ÖvrigtVägnamn", q, countynr, "1");
+  let arrRoadNr = [];
+  let arrStreetname = [];
+  let arrOtherRoads = [];
 
   try {
-    const response = await fetchWithBody(bodyRoadNr);
-
-    const resultObj = response.data.RESPONSE.RESULT[0];
-
-    if (response.status === 206) {
-      const lastChangeId = resultObj.INFO.LASTCHANGEID;
-
-      let newBody = bodySyntax.replace("$changeid$", lastChangeId)
-                        .replace("$roadnr$", q)
-                        .replace("$featureType$", "Vägnummer");
-      if (countynr !== '') {
-        newBody = newBody.replace("$countynr$", `<EQ name="Länstillhörighet" value="${countynr}" />`);
-      } else {
-        newBody = newBody.replace("$countynr$", '');
-      }
-                                      
-      const response2 = await fetchWithBody(newBody);
-      const resultObj2 = response2.data.RESPONSE.RESULT[0];
-
-      // Concatenate the Vägnummer arrays
-      const combinedVagnummer = resultObj.Vägnummer.concat(resultObj2.Vägnummer);
-      if (format.toLowerCase() === 'geojson') {
-        res.send(createGeojson(combinedVagnummer, configOptions, srid));
-      } else {
-        res.send(createWktCollection(combinedVagnummer, configOptions, srid));
-      }
+    // Only do the roadnumber request if the search value is a number and the rest orherwise
+    if (typeof q === 'number' && !isNaN(q)) {
+      const responseRoadNr = await fetchWithBody(bodyQueryRoadNr);
+      arrRoadNr = await handleResponse(responseRoadNr, configOptions, q, countynr, srid, format);    
     } else {
-      if (format.toLowerCase() === 'geojson') {
-        res.send(createGeojson(resultObj.Vägnummer, configOptions, srid));
-      } else {
-        res.send(createWktCollection(resultObj.Vägnummer, configOptions, srid));
-      }
+      const responseStreetname = await fetchWithBody(bodyQueryStreetname);
+      const responseOtherRoads = await fetchWithBody(bodyQueryOtherRoads);
+
+      arrStreetname = await handleResponse(responseStreetname, configOptions, q, countynr, srid, format);
+      arrOtherRoads = await handleResponse(responseOtherRoads, configOptions, q, countynr, srid, format);
     }
+
+    res.send(arrRoadNr.concat(arrStreetname, arrOtherRoads));
   } catch (err) {
     console.log(err);
     console.log('ERROR doSearch!');
@@ -325,6 +378,29 @@ function groupRoadSegments(segments, srid) {
   }, {});
 }
 
+function groupStreetSegments(segments, srid) {
+  return segments.reduce((accumulator, segment) => {
+    const { Namn, Feature_Oid, Geometry } = segment;
+    
+    // Om väg-ID inte finns i ackumulatorn, skapa en ny post
+    if (!accumulator[`${Namn}${Feature_Oid}`]) {
+        accumulator[`${Namn}${Feature_Oid}`] = {
+          Name: Namn,
+          Feature_Oid: Feature_Oid,
+          geometries: []
+        };
+    }
+    
+    // Lägg till geometrin i rätt väg
+    if (srid !== '3006') {
+      accumulator[`${Namn}${Feature_Oid}`].geometries.push(reprojektWKT(Geometry['WKT-SWEREF99TM-3D'], srid));
+    } else {
+      accumulator[`${Namn}${Feature_Oid}`].geometries.push(Geometry['WKT-SWEREF99TM-3D']);
+    }
+    return accumulator;
+  }, {});
+}
+
 /**
  * Take segments and join them to a collection
  * 
@@ -336,19 +412,36 @@ function groupRoadSegments(segments, srid) {
  * @param {any} srid
  * @returns {any[]}
  */
-function createWktCollection(roadSegments, configOptions, srid) {
+function createWktCollection(roadSegments, configOptions, srid, foundKey) {
   const result = [];
 
-  const groupedRoads = groupRoadSegments(roadSegments, srid);
-  const resultArray = Object.values(groupedRoads);
+  switch (foundKey) {
+    case 'Vägnummer':
+      const groupedRoads = groupRoadSegments(roadSegments, srid);
+      const resultArray = Object.values(groupedRoads);
 
-  resultArray.forEach((road) => {
-    result.push({ 
-      Huvudnummer: `${road.roadId}`,
-      Länstillhörighet: `${road.countyId}`,
-      Geometri: `GEOMETRYCOLLECTION (${road.geometries.join(', ')})`
-    });
-  });
+      resultArray.forEach((road) => {
+        result.push({ 
+          Huvudnummer: `${road.roadId}`,
+          Länstillhörighet: `${road.countyId}`,
+          Geometri: `GEOMETRYCOLLECTION (${road.geometries.join(', ')})`
+        });
+      });
+      break;
+  
+    default:
+      const groupedStreets = groupStreetSegments(roadSegments, srid);
+      const resultArrayStreet = Object.values(groupedStreets);
+
+      resultArrayStreet.forEach((street) => {
+        result.push({ 
+          Namn: `${street.Name}`,
+          Feature_Oid: `${street.Feature_Oid}`,
+          Geometri: `GEOMETRYCOLLECTION (${street.geometries.join(', ')})`
+        });
+      });
+      break;
+  }
 
   return result;
 }
@@ -364,7 +457,7 @@ function createWktCollection(roadSegments, configOptions, srid) {
  * @param {any} srid
  * @returns {{ type: string; name: any; crs: { type: string; properties: { name: string; }; }; features: any[]; }}
  */
-function createGeojson(entities, configOptions, srid, section = false) {
+function createGeojson(entities, configOptions, srid, foundKey, section = false) {
   const result = {};
   let features = [];
   result['type'] = 'FeatureCollection';
