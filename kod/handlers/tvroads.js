@@ -175,7 +175,6 @@ async function handleResponse(response, configOptions, q, countynr, srid, format
       const lastChangeId = resultObj.INFO.LASTCHANGEID;
 
       const newBodyQueryRoadNr = getSearchBody("Vägnummer", q, countynr, lastChangeId);
-      console.log(newBodyQueryRoadNr);
 
       const response2 = await fetchWithBody(newBodyQueryRoadNr);
       const resultObj2 = response2.data.RESPONSE.RESULT[0];
