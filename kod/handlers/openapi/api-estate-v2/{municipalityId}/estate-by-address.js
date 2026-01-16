@@ -45,7 +45,9 @@ async function doGet(req, res, address, municipalityId, statusAddress, maxHits) 
             responseArray.push({ 
               address: addressObj.adress, 
               designation: addressObj.registerenhetsreferensBeteckning, 
-              objectidentifier: element.properties.registerenhetsreferens.objektidentitet
+              objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
+              districtname: addressObj.distriktsnamn,
+              districtcode: addressObj.distriktskod
             });
           });
           responseArray.sort((a,b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
@@ -91,6 +93,10 @@ function concatAddress(feature) {
     adress['adressplatspunkt'] = feature.properties.adressplatsattribut.adressplatspunkt;
     adress['registerenhetsreferensBeteckning'] = feature.properties.registerenhetsreferens.beteckning;
     adress['registerenhetsreferensObjektidentitet'] = feature.properties.registerenhetsreferens.objektidentitet;
+    if ('distrikttillhorighet' in feature.properties) {
+      adress['distriktsnamn'] = feature.properties.distrikttillhorighet.distriktsnamn;
+      adress['distriktskod'] = feature.properties.distrikttillhorighet.distriktskod;
+    }
   }
   return adress;
 }
