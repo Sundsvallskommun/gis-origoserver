@@ -11,7 +11,7 @@ module.exports = {
   info: {
     title: 'API GIS Estate',
     description: 'Estate API from the GIS department',
-    version: '2.0.1',
+    version: '2.0.2',
     contact: {
       name: 'Johnny Blästa',
       email: 'johnny.blasta@sundsvall.se',
@@ -56,12 +56,24 @@ module.exports = {
     EstateDesignationResponse: {
       type: 'object',
       properties: {
+        address: {
+          description: 'The adress of the estate.',
+          type: 'string'
+        },
         designation: {
           description: 'The designation of the estate.',
           type: 'string'
         },
         objectidentifier: {
           description: 'The unique identifier of the estate.',
+          type: 'string'
+        },
+        districtname: {
+          description: 'The district name of the estate.',
+          type: 'string'
+        },
+        districtcode: {
+          description: 'The district code of the estate.',
           type: 'string'
         }
       }
@@ -79,6 +91,14 @@ module.exports = {
         },
         objectidentifier: {
           description: 'The unique identifier of the estate.',
+          type: 'string'
+        },
+        districtname: {
+          description: 'The district name of the estate.',
+          type: 'string'
+        },
+        districtcode: {
+          description: 'The district code of the estate.',
           type: 'string'
         }
       }
