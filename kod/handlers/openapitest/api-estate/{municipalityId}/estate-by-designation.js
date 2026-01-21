@@ -12,6 +12,8 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
   configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
   const responseArray = []
+  const arrayAllIds = []
+  const arrayAddresses = []
   
   var token = await simpleStorage.getToken(configOptions);
   configOptions.scope = configOptions.scope_address;
@@ -30,15 +32,15 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
     })]).then(([req1]) => {
       const registerenhetIdArr = [];
       if (req1.data.length > 0) {
-        /* req1.data.forEach(element => {
-          responseArray.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
+        req1.data.forEach(element => {
+          arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
         });
-        responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+        /*responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
         res.status(200).json(responseArray);  */
         req1.data.forEach(element => {
           if (typeof element.registerenhet !== 'undefined') {
             registerenhetIdArr.push(element.registerenhet);
-          }          
+          }
         });
         Promise.all([axios({
           method: 'POST',
@@ -52,16 +54,31 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
         })]).then(([reqPost]) => {
           reqPost.data.features.forEach(element => {
             const addressObj = concatAddress(element);
-            responseArray.push({ 
+            arrayAddresses.push({ 
               address: addressObj.adress, 
               designation: addressObj.registerenhetsreferensBeteckning, 
               objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
               districtname: addressObj.distriktsnamn,
               districtcode: addressObj.distriktskod
             });
+          });      
+          // Fill up attributes with address and district
+          arrayAllIds.forEach(obj => {
+              if (!obj.address) {
+                  const match = arrayAddresses.find(item => item.objectidentifier === obj.objectidentifier);
+                  if (match) {
+                      obj.address = match.address;
+                      obj.districtname = match.districtname;
+                      obj.districtcode = match.districtcode;
+                  } else {
+                      obj.address = '';
+                      obj.districtname = '';
+                      obj.districtcode = '';
+                  }
+              }
           });
-          responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-          res.status(200).json(responseArray);
+          arrayAllIds.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+          res.status(200).json(arrayAllIds);
         });
       } else {
         res.status(200).json(responseArray);
@@ -144,10 +161,10 @@ module.exports = {
       if (params.get('maxHits').match(regexNumbers) !== null) {
         maxHits = params.get('maxHits');
       } else {
-        maxHits = '100';
+        maxHits = '1000';
       }     
     } else {
-      maxHits = '100';
+      maxHits = '1000';
     }
     if (params.has('designation')) {
       if (params.get('designation').match(regex) !== null) {
