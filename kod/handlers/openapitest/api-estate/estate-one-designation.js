@@ -1,13 +1,13 @@
-const conf = require('../../../../conf/config');
+const conf = require('../../../conf/config');
 const { URL } = require('url');
-const simpleStorage = require('../../simpleStorage');
+const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9:,\- ]+$/;
 const regexNumbers = /^[0-9]+$/;
 
-async function doGet(req, res, designation, municipalityId, statusDesignation, maxHits) {
+async function doGet(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
@@ -23,7 +23,7 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
   if (designation !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/beteckning/referens?beteckning=' + designation + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -35,8 +35,6 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
         req1.data.forEach(element => {
           arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
         });
-        /*responseArray.sort((a,b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-        res.status(200).json(responseArray);  */
         req1.data.forEach(element => {
           if (typeof element.registerenhet !== 'undefined') {
             registerenhetIdArr.push(element.registerenhet);
@@ -147,21 +145,6 @@ module.exports = {
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
     let = validationError = false;
-    if(String(req.params.municipalityId).length !== 4) {
-      validationError = true;
-      res.status(400).json({
-        status: 400,
-        errors: [
-          {
-            path: 'municipalityId',
-            errorCode: 'type.openapi.requestValidation',
-            message: 'must be a 4-digit number',
-            location: 'path'
-          }
-        ]
-      });
-    }
-    const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
     let designation = '';
     let statusDesignation = 'gällande';
     if (params.has('status')) {
@@ -190,28 +173,21 @@ module.exports = {
       res.status(400).json({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0 && !validationError) {
-      doGet(req, res, designation, municipalityId, statusDesignation, maxHits);
+      doGet(req, res, designation, statusDesignation, maxHits);
     }
   },
 };
 
 module.exports.get.apiDoc = {
-  description: 'Get estatereference and address for search estates.',
-  operationId: 'getEstateIdByDesignation',
+  description: 'Get estatereference and address for a complete estate designation.',
+  operationId: 'getEstateIdForDesignation',
   parameters: [
-    {
-      in: 'path',
-      name: 'municipalityId',
-      required: true,
-      pattern: '[0-2]{1}[0-9]{3}',
-      type: 'string'
-    },
     {
       in: 'query',
       name: 'designation',
       required: true,
       type: 'string',
-      description: 'An designation to search for (starts with).'
+      description: 'An complete designation.'
     },
     {
       in: 'query',
@@ -255,4 +231,3 @@ module.exports.get.apiDoc = {
     },
   },
 };
-  
