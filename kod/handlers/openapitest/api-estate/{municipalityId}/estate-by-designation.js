@@ -2,6 +2,7 @@ const conf = require('../../../../conf/config');
 const { URL } = require('url');
 const simpleStorage = require('../../simpleStorage');
 const axios = require('axios').default;
+const fs = require('fs');
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9:,\- ]+$/;
