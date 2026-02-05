@@ -75,7 +75,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
             console.log(encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'));
             const instance = axios.create({
               httpsAgent: new (require('https')).Agent({
-                ca: fs.readFileSync('/etc/pki/ca-trust/source/ca-bundle.legacy.crt')
+                ca: fs.readFileSync('/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crts')
               })
             });
             const districtResponse = await instance({
