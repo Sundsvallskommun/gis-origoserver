@@ -82,7 +82,12 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
             obj.districtname = match.districtname;
             obj.districtcode = match.districtcode;
           } else {
-            const districtResponse = await axios({
+            const instance = axios.create({
+              httpsAgent: new (require('https')).Agent({
+                rejectUnauthorized: false
+              })
+            });
+            const districtResponse = await instance({
               method: 'GET',
               url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
               headers: {
