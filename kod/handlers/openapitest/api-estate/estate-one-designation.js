@@ -1,12 +1,101 @@
 const conf = require('../../../conf/config');
 const { URL } = require('url');
 const simpleStorage = require('../simpleStorage');
+const { Console } = require('console');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9:,\- ]+$/;
 const regexNumbers = /^[0-9]+$/;
 
+async function processRequest(req, res, designation, statusDesignation, maxHits) {
+  const configOptions = Object.assign({}, conf[proxyUrl]);
+  configOptions.scope = configOptions.scope_register;
+  configOptions.type = 'register';
+
+  var token = await simpleStorage.getToken(configOptions);
+  configOptions.scope = configOptions.scope_address;
+  configOptions.type = 'address';
+  var tokenAdress = await simpleStorage.getToken(configOptions);
+
+  try {
+    const registerResponse = await axios({
+      method: 'GET',
+      url: encodeURI(configOptions.url_register + '/beteckning/referens?beteckning=' + designation + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'content-type': 'application/json',
+        'scope': `${configOptions.scope_register}`
+      }
+    });
+
+    const registerenhetIdArr = [];
+    const arrayAllIds = [];
+    if (registerResponse.data.length > 0) {
+      registerResponse.data.forEach(element => {
+        arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
+        if (typeof element.registerenhet !== 'undefined') {
+          registerenhetIdArr.push(element.registerenhet);
+        }
+      });
+
+      const postResponse = await axios({
+        method: 'POST',
+        url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
+        headers: {
+          'Authorization': 'Bearer ' + tokenAdress,
+          'content-type': 'application/json',
+          'scope': `${configOptions.scope_address}`
+        },
+        data: registerenhetIdArr
+      });
+
+      const arrayAddresses = [];
+      postResponse.data.features.forEach(element => {
+        const addressObj = concatAddress(element);
+        arrayAddresses.push({
+          address: addressObj.adress,
+          designation: addressObj.registerenhetsreferensBeteckning,
+          objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
+          districtname: addressObj.distriktsnamn,
+          districtcode: addressObj.distriktskod
+        });
+      });
+
+      const districtPromises = arrayAllIds.map(async obj => {
+        if (!obj.address) {
+          const match = arrayAddresses.find(item => item.objectidentifier === obj.objectidentifier);
+          if (match) {
+            obj.address = match.address;
+            obj.districtname = match.districtname;
+            obj.districtcode = match.districtcode;
+          } else {
+            const districtResponse = await axios({
+              method: 'GET',
+              url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+              headers: {
+                'content-type': 'application/json'
+              }
+            });
+            obj.address = '';
+            obj.districtname = districtResponse.data.distriktsnamn;
+            obj.districtcode = districtResponse.data.distriktskod;
+          }
+        }
+      });
+
+      await Promise.all(districtPromises);
+      arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+      res.status(200).json(arrayAllIds);
+    } else {
+      res.status(200).json([]);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/*
 async function doGet(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_register;
@@ -81,9 +170,19 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
                       obj.districtname = match.districtname;
                       obj.districtcode = match.districtcode;
                   } else {
-                      obj.address = '';
-                      obj.districtname = '';
-                      obj.districtcode = '';
+                    console.log(obj.objectidentifier);
+                    Promise.all([axios({
+                      method: 'GET',
+                      url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+                      headers: {
+                        'content-type': 'application/json'
+                        }
+                    })]).then(([reqDistrict]) => {
+                      console.log(reqDistrict.data);
+                      obj.address = reqDistrict.data.distriktsnamn;
+                      obj.districtname = reqDistrict.data.distriktskod;
+                      obj.districtcode = reqDistrict.data.objektidentitet;
+                    });
                   }
               }
           });
@@ -97,7 +196,7 @@ async function doGet(req, res, designation, statusDesignation, maxHits) {
   } else {
     res.status(400).json({error: 'Missing required parameter designation'});
   }
-}
+}*/
 
 function concatAddress(feature) {
   let adress = {};
@@ -173,7 +272,7 @@ module.exports = {
       res.status(400).json({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0 && !validationError) {
-      doGet(req, res, designation, statusDesignation, maxHits);
+      processRequest(req, res, designation, statusDesignation, maxHits);
     }
   },
 };
