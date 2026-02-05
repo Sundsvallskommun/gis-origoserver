@@ -63,6 +63,18 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
 
       const districtPromises = arrayAllIds.map(async obj => {
         if (!obj.address) {
+          const matches = arrayAddresses.filter(item => item.objectidentifier === obj.objectidentifier);
+          if (matches.length > 0) {
+            matches.forEach((match, index) => {
+              if (index === 0) {
+                obj.address = match.address;
+                obj.districtname = match.districtname;
+                obj.districtcode = match.districtcode;
+              } else {
+                arrayAllIds.push(match);
+              }
+            });
+          }
           const match = arrayAddresses.find(item => item.objectidentifier === obj.objectidentifier);
           if (match) {
             obj.address = match.address;
