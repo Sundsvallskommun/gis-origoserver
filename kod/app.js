@@ -97,6 +97,14 @@ openapi.initialize({
   ],
 });
 
+openapi.initialize({
+  apiDoc: require('./handlers/openapi/api-geometry-query/api-doc.js'),
+  app: app,
+  paths: [
+		path.resolve(__dirname, 'handlers/openapi/api-geometry-query/'),
+  ],
+});
+
 var server = app.listen(3001, function () {
   var host = server.address().address
   var port = server.address().port
