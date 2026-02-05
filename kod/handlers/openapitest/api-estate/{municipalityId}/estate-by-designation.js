@@ -18,6 +18,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
   var tokenAdress = await simpleStorage.getToken(configOptions);
 
   try {
+    console.log(encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&objektstatus=' + objectStatus + '&maxHits=' + maxHits));
     const registerResponse = await axios({
       method: 'GET',
       url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&objektstatus=' + objectStatus + '&maxHits=' + maxHits),
@@ -38,6 +39,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         }
       });
 
+      console.log(encodeURI(configOptions.url_address + '/registerenhet?includeData=total'));
       const postResponse = await axios({
         method: 'POST',
         url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
@@ -69,6 +71,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
             obj.districtname = match.districtname;
             obj.districtcode = match.districtcode;
           } else {
+            console.log(encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'));
             const districtResponse = await axios({
               method: 'GET',
               url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
