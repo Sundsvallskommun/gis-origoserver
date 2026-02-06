@@ -9,7 +9,6 @@ const regexNumbers = /^[0-9]+$/;
 
 async function doGet(req, res, address, municipalityId, statusAddress, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
-  configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   const responseArray = []
   var token = await simpleStorage.getToken(configOptions);
