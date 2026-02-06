@@ -20,7 +20,7 @@ async function lookupDistrict(req, res, easting, northing, srid) {
     try {
       await client.connect();
     } catch(err) {
-      res.status(500).json({error: 'Failed to connect to database!'});
+      res.status(500).send({error: 'Failed to connect to database!'});
     }    
     try {
       const res = await client.query(`SELECT distriktsnamn, distriktskod, objektidentitet
@@ -34,7 +34,7 @@ async function lookupDistrict(req, res, easting, northing, srid) {
         };
       }
     } catch(err) {
-      res.status(500).json({error: 'Failed to query database!'});
+      res.status(500).send({error: 'Failed to query database!'});
     }    
     
     await client.end();
@@ -75,7 +75,7 @@ module.exports = {
         let found = req.params.uuid.match(uuidRegEx);
         if (found === null) {
             validationError = true;
-            res.status(400).json({
+            res.status(400).send({
             status: 400,
             errors: [
                 {
@@ -92,7 +92,7 @@ module.exports = {
         }
     } else {
       validationError = true;
-      res.status(400).json({error: 'Error in configuration!'});
+      res.status(400).send({error: 'Error in configuration!'});
     }
   },
 };
@@ -105,7 +105,7 @@ module.exports.get.apiDoc = {
       in: 'path',
       name: 'uuid',
       required: true,
-      pattern: '[0-9]{4}',
+      pattern: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
       type: 'string'
     }
   ],

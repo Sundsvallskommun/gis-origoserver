@@ -16,7 +16,17 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
   configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   var tokenAdress = await simpleStorage.getToken(configOptions);
+  const registerenhetIdArr = [];
+  const arrayAllIds = [];
+  const arrayAddresses = [];
+  
+  const instance = axios.create({
+    httpsAgent: new (require('https')).Agent({
+      rejectUnauthorized: false
+    })
+  });
 
+  // Sök efter fastigheter på beteckning och därefter även sök efter adresser på dessa fastigheter.
   try {
     const registerResponse = await axios({
       method: 'GET',
@@ -28,8 +38,6 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
       }
     });
 
-    const registerenhetIdArr = [];
-    const arrayAllIds = [];
     if (registerResponse.data.length > 0) {
       registerResponse.data.forEach(element => {
         arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
@@ -49,7 +57,6 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         data: registerenhetIdArr
       });
 
-      const arrayAddresses = [];
       postResponse.data.features.forEach(element => {
         const addressObj = concatAddress(element);
         arrayAddresses.push({
@@ -60,54 +67,56 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
           districtcode: addressObj.distriktskod
         });
       });
-
-      const districtPromises = arrayAllIds.map(async obj => {
-        if (!obj.address) {
-          const matches = arrayAddresses.filter(item => item.objectidentifier === obj.objectidentifier);
-          if (matches.length > 0) {
-            matches.forEach((match, index) => {
-              if (index === 0) {
-                obj.address = match.address;
-                obj.districtname = match.districtname;
-                obj.districtcode = match.districtcode;
-              } else {
-                arrayAllIds.push(match);
-              }
-            });
-          }
-          const match = arrayAddresses.find(item => item.objectidentifier === obj.objectidentifier);
-          if (match) {
-            obj.address = match.address;
-            obj.districtname = match.districtname;
-            obj.districtcode = match.districtcode;
-          } else {
-            const instance = axios.create({
-              httpsAgent: new (require('https')).Agent({
-                rejectUnauthorized: false
-              })
-            });
-            const districtResponse = await instance({
-              method: 'GET',
-              url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
-              headers: {
-                'content-type': 'application/json'
-              }
-            });
-            obj.address = '';
-            obj.districtname = districtResponse.data.distriktsnamn;
-            obj.districtcode = districtResponse.data.distriktskod;
-          }
-        }
-      });
-
-      await Promise.all(districtPromises);
-      arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-      res.status(200).json(arrayAllIds);
     } else {
       res.status(200).json([]);
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, block: 'registerenhet' });
+  }
+
+  // Ta listan med alla fastigheter och fyll på med adressen till dem.
+  // Om det finns flera adresser på samma fastighet lägg till de också så att de får ett eget objekt i svaret.
+  arrayAllIds.forEach(beteckning => {
+      if (!beteckning.address) {
+        const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
+        if (matches.length > 0) {
+          matches.forEach((match, index) => {
+            if (index === 0) {
+              beteckning.address = match.address;
+              beteckning.districtname = match.districtname;
+              beteckning.districtcode = match.districtcode;
+            } else {
+              arrayAllIds.push(match);
+            }
+          });
+        }
+      }
+    });
+
+  // Ta listan med alla fastigheter och fyll på med distrikt på de som saknar, d.v.s. de fastigheter som saknar adress.
+  try {
+    const districtPromises = arrayAllIds.map(async obj => {
+      if (!obj.districtname) {
+        const districtResponse = await instance({
+          method: 'GET',
+          url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+          headers: {
+            'content-type': 'application/json'
+          }
+        });
+        if (!districtResponse.data.districtname) {
+          obj.address = '';
+          obj.districtname = districtResponse.data.distriktsnamn;
+          obj.districtcode = districtResponse.data.distriktskod;
+        }
+      }
+    });
+    await Promise.all(districtPromises);
+    // Sort the array alphabetically on designation
+    arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+    res.status(200).json(arrayAllIds);
+  } catch (error) {
+    res.status(500).json({ error: error.message, block: 'district' });
   }
 }
 
