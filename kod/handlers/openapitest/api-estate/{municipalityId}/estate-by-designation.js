@@ -9,11 +9,9 @@ const regexNumbers = /^[0-9]+$/;
 
 async function processRequest(req, res, designation, municipalityId, statusDesignation, objectStatus, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
-  configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
 
   var token = await simpleStorage.getToken(configOptions);
-  configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   var tokenAdress = await simpleStorage.getToken(configOptions);
   const registerenhetIdArr = [];
@@ -34,7 +32,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
-        'scope': `${configOptions.scope_register}`
+        'scope': `${configOptions.scope}`
       }
     });
 
@@ -52,7 +50,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         headers: {
           'Authorization': 'Bearer ' + tokenAdress,
           'content-type': 'application/json',
-          'scope': `${configOptions.scope_address}`
+          'scope': `${configOptions.scope}`
         },
         data: registerenhetIdArr
       });
@@ -71,7 +69,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
       res.status(200).json([]);
     }
   } catch (error) {
-    res.status(500).json({ error: error.message, block: 'registerenhet' });
+    res.status(500).send({ error: error.message, block: 'registerenhet' });
   }
 
   // Ta listan med alla fastigheter och fyll på med adressen till dem.
@@ -116,7 +114,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
     arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
     res.status(200).json(arrayAllIds);
   } catch (error) {
-    res.status(500).json({ error: error.message, block: 'district' });
+    res.status(500).send({ error: error.message, block: 'district' });
   }
 }
 
@@ -269,7 +267,7 @@ module.exports = {
     let = validationError = false;
     if(String(req.params.municipalityId).length !== 4) {
       validationError = true;
-      res.status(400).json({
+      res.status(400).send({
         status: 400,
         errors: [
           {
@@ -304,11 +302,11 @@ module.exports = {
         designation = params.get('designation');
       } else {
         validationError = true;
-        res.status(400).json({error: 'Invalid in parameter designation'});
+        res.status(400).send({error: 'Invalid in parameter designation'});
       }
     } else {
       validationError = true;
-      res.status(400).json({error: 'Missing required parameter designation'});
+      res.status(400).send({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0 && !validationError) {
       processRequest(req, res, designation, municipalityId, statusDesignation, objectStatus, maxHits);

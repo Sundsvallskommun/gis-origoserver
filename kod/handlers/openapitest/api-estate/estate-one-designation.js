@@ -9,11 +9,9 @@ const regexNumbers = /^[0-9]+$/;
 
 async function processRequest(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
-  configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
 
   var token = await simpleStorage.getToken(configOptions);
-  configOptions.scope = configOptions.scope_address;
   configOptions.type = 'address';
   var tokenAdress = await simpleStorage.getToken(configOptions);
   const registerenhetIdArr = [];
@@ -34,7 +32,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
-        'scope': `${configOptions.scope_register}`
+        'scope': `${configOptions.scope}`
       }
     });
 
@@ -52,7 +50,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         headers: {
           'Authorization': 'Bearer ' + tokenAdress,
           'content-type': 'application/json',
-          'scope': `${configOptions.scope_address}`
+          'scope': `${configOptions.scope}`
         },
         data: registerenhetIdArr
       });
