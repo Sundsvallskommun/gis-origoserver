@@ -1,13 +1,13 @@
-const conf = require('../../../../conf/config');
+const conf = require('../../../conf/config');
 const { URL } = require('url');
-const simpleStorage = require('../../simpleStorage');
+const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
 
 var proxyUrl = 'apiEstate';
 const regex = /^[a-zA-ZäöåÄÖÅ0-9:,\- ]+$/;
 const regexNumbers = /^[0-9]+$/;
 
-async function processRequest(req, res, designation, municipalityId, statusDesignation, objectStatus, maxHits) {
+async function processRequest(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.type = 'register';
 
@@ -17,18 +17,18 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
   const registerenhetIdArr = [];
   const arrayAllIds = [];
   const arrayAddresses = [];
-  
+
   const instance = axios.create({
     httpsAgent: new (require('https')).Agent({
       rejectUnauthorized: false
     })
   });
 
-  // Sök efter fastigheter på beteckning och därefter även sök efter adresser på dessa fastigheter.
+  // Hämta en fastighet på beteckning och därefter även sök efter adresser på denna fastighet.
   try {
     const registerResponse = await axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&objektstatus=' + objectStatus + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/beteckning/referens?beteckning=' + designation + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -72,8 +72,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
     res.status(500).send({ error: error.message, block: 'registerenhet' });
   }
 
-  // Ta listan med alla fastigheter och fyll på med adressen till dem.
-  // Om det finns flera adresser på samma fastighet lägg till de också så att de får ett eget objekt i svaret.
+  // Lägg till alla adresser på fastigheten
   arrayAllIds.forEach(beteckning => {
       if (!beteckning.address) {
         const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
@@ -91,7 +90,8 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
       }
     });
 
-  // Ta listan med alla fastigheter och fyll på med distrikt på de som saknar, d.v.s. de fastigheter som saknar adress.
+
+  // Fyll på med distrikt om det saknas, d.v.s. fastighet som saknar adress.
   try {
     const districtPromises = arrayAllIds.map(async obj => {
       if (!obj.districtname) {
@@ -107,19 +107,20 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
           obj.districtname = districtResponse.data.distriktsnamn;
           obj.districtcode = districtResponse.data.distriktskod;
         }
-      }
+     }
     });
-    await Promise.all(districtPromises);
-    // Sort the array alphabetically on designation
-    arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-    res.status(200).json(arrayAllIds);
+
+      await Promise.all(districtPromises);
+      // Sort the array alphabetically on address
+      arrayAllIds.sort((a, b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
+      res.status(200).json(arrayAllIds);
   } catch (error) {
     res.status(500).send({ error: error.message, block: 'district' });
   }
 }
 
 /*
-async function doGet(req, res, designation, municipalityId, statusDesignation, maxHits) {
+async function doGet(req, res, designation, statusDesignation, maxHits) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.scope = configOptions.scope_register;
   configOptions.type = 'register';
@@ -135,7 +136,7 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
   if (designation !== '') {
     Promise.all([axios({
       method: 'GET',
-      url: encodeURI(configOptions.url_register + '/referens/fritext?beteckning=' + designation + '&kommunkod=' + municipalityId + '&status=' + statusDesignation + '&maxHits=' + maxHits),
+      url: encodeURI(configOptions.url_register + '/beteckning/referens?beteckning=' + designation + '&status=' + statusDesignation + '&maxHits=' + maxHits),
       headers: {
         'Authorization': 'Bearer ' + token,
         'content-type': 'application/json',
@@ -164,30 +165,48 @@ async function doGet(req, res, designation, municipalityId, statusDesignation, m
         })]).then(([reqPost]) => {
           reqPost.data.features.forEach(element => {
             const addressObj = concatAddress(element);
-            arrayAddresses.push({ 
-              address: addressObj.adress, 
-              designation: addressObj.registerenhetsreferensBeteckning, 
+            arrayAddresses.push({
+              address: addressObj.adress,
+              designation: addressObj.registerenhetsreferensBeteckning,
               objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
               districtname: addressObj.distriktsnamn,
               districtcode: addressObj.distriktskod
             });
-          });      
+          });
           // Fill up attributes with address and district
           arrayAllIds.forEach(obj => {
               if (!obj.address) {
                   const matches = arrayAddresses.filter(item => item.objectidentifier === obj.objectidentifier);
                   if (matches.length > 0) {
-                    const arrMatchedAddresses = [];
-                    matches.forEach(match => {
-                      arrMatchedAddresses.push(match.address);
+                    matches.forEach((match, index) => {
+                      if (index === 0) {
+                        obj.address = match.address;
+                        obj.districtname = match.districtname;
+                        obj.districtcode = match.districtcode;
+                      } else {
+                        arrayAllIds.push(match);
+                      }
+                    });
+                  }
+                  const match = arrayAddresses.find(item => item.objectidentifier === obj.objectidentifier);
+                  if (match) {
+                      obj.address = match.address;
                       obj.districtname = match.districtname;
                       obj.districtcode = match.districtcode;
-                    });
-                    obj.address = arrMatchedAddresses;
                   } else {
-                    obj.address = [];
-                    obj.districtname = '';
-                    obj.districtcode = '';
+                    console.log(obj.objectidentifier);
+                    Promise.all([axios({
+                      method: 'GET',
+                      url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+                      headers: {
+                        'content-type': 'application/json'
+                        }
+                    })]).then(([reqDistrict]) => {
+                      console.log(reqDistrict.data);
+                      obj.address = reqDistrict.data.distriktsnamn;
+                      obj.districtname = reqDistrict.data.distriktskod;
+                      obj.districtcode = reqDistrict.data.objektidentitet;
+                    });
                   }
               }
           });
@@ -249,24 +268,8 @@ module.exports = {
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
     let = validationError = false;
-    if(String(req.params.municipalityId).length !== 4) {
-      validationError = true;
-      res.status(400).send({
-        status: 400,
-        errors: [
-          {
-            path: 'municipalityId',
-            errorCode: 'type.openapi.requestValidation',
-            message: 'must be a 4-digit number',
-            location: 'path'
-          }
-        ]
-      });
-    }
-    const municipalityId = req.params.municipalityId ? req.params.municipalityId : 2281;
     let designation = '';
     let statusDesignation = 'gällande';
-    let objectStatus = 'levande';
     if (params.has('status')) {
       statusDesignation = params.get('status');
     } else {
@@ -293,28 +296,21 @@ module.exports = {
       res.status(400).send({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0 && !validationError) {
-      processRequest(req, res, designation, municipalityId, statusDesignation, objectStatus, maxHits);
+      processRequest(req, res, designation, statusDesignation, maxHits);
     }
   },
 };
 
 module.exports.get.apiDoc = {
-  description: 'Get estatereference and address for search estates.',
-  operationId: 'getEstateIdByDesignation',
+  description: 'Get estatereference and address for a complete estate designation.',
+  operationId: 'getEstateIdForDesignation',
   parameters: [
-    {
-      in: 'path',
-      name: 'municipalityId',
-      required: true,
-      pattern: '[0-2]{1}[0-9]{3}',
-      type: 'string'
-    },
     {
       in: 'query',
       name: 'designation',
       required: true,
       type: 'string',
-      description: 'An designation to search for (starts with).'
+      description: 'An complete designation.'
     },
     {
       in: 'query',
@@ -358,4 +354,3 @@ module.exports.get.apiDoc = {
     },
   },
 };
-  
