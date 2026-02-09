@@ -39,7 +39,7 @@ async function lookupDistrict(req, res, easting, northing, srid) {
     
     await client.end();
 
-    res.status(200).json(responseObj);
+    res.status(200).send(responseObj);
 }
 
 async function lookupRegisterenhet(req, res, uuid) {
@@ -60,7 +60,7 @@ async function lookupRegisterenhet(req, res, uuid) {
             if (typeof coords !== 'undefined') {
                 lookupDistrict(req, res, coords[0], coords[1], 3006);               
             } else {
-                res.status(200).json({ distriktsnamn: '', distriktskod: '', objektidentitet: '' });
+                res.status(200).send({ distriktsnamn: '', distriktskod: '', objektidentitet: '' });
             }
         }
     });

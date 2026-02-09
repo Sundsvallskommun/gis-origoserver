@@ -7,12 +7,10 @@ var proxyUrl = 'apiEstateTest';
 
 async function doGet(req, res, objectidentifier) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
-  configOptions.scope = configOptions.scope_owner;
   configOptions.type = 'owner';
   const responseObj = {}
   
   var tokenOwner = await simpleStorage.getToken(configOptions);
-  configOptions.scope = configOptions.scope_estate;
   configOptions.type = 'estate';
   var tokenEstate = await simpleStorage.getToken(configOptions);
  
@@ -26,7 +24,7 @@ async function doGet(req, res, objectidentifier) {
           headers: {
             'Authorization': 'Bearer ' + tokenOwner,
             'content-type': 'application/json',
-            'scope': `${configOptions.scope_owner}`
+            'scope': `${configOptions.scope}`
             }
         }),axios({
           method: 'GET',
@@ -34,7 +32,7 @@ async function doGet(req, res, objectidentifier) {
           headers: {
             'Authorization': 'Bearer ' + tokenEstate,
             'content-type': 'application/json',
-            'scope': `${configOptions.scope_estate}`
+            'scope': `${configOptions.scope}`
             }
         })]).then(([reqOwner,reqEstate]) => {
           if (reqOwner.data.features.length > 0) {
