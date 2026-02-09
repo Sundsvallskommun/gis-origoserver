@@ -17,6 +17,8 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
   const registerenhetIdArr = [];
   const arrayAllIds = [];
   const arrayAddresses = [];
+  let errorBlock = '';
+  let continueProcessing = true;
 
   const instance = axios.create({
     httpsAgent: new (require('https')).Agent({
@@ -35,6 +37,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         'scope': `${configOptions.scope}`
       }
     });
+    errorBlock = 'registerResponse';
 
     if (registerResponse.data.length > 0) {
       registerResponse.data.forEach(element => {
@@ -54,6 +57,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         },
         data: registerenhetIdArr
       });
+      errorBlock = 'postResponse';
 
       postResponse.data.features.forEach(element => {
         const addressObj = concatAddress(element);
@@ -66,57 +70,57 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         });
       });
     } else {
-      res.status(200).json([]);
+      continueProcessing = false;
     }
-  } catch (error) {
-    res.status(500).json({ error: error.message, block: 'registerenhet' });
-  }
 
-  // Lägg till alla adresser på fastigheten
-  arrayAllIds.forEach(beteckning => {
-      if (!beteckning.address) {
-        const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
-        if (matches.length > 0) {
-          matches.forEach((match, index) => {
-            if (index === 0) {
-              beteckning.address = match.address;
-              beteckning.districtname = match.districtname;
-              beteckning.districtcode = match.districtcode;
-            } else {
-              arrayAllIds.push(match);
+    if (continueProcessing) {
+      // Lägg till alla adresser på fastigheten
+      arrayAllIds.forEach(beteckning => {
+        if (!beteckning.address) {
+          const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
+          if (matches.length > 0) {
+            matches.forEach((match, index) => {
+              if (index === 0) {
+                beteckning.address = match.address;
+                beteckning.districtname = match.districtname;
+                beteckning.districtcode = match.districtcode;
+              } else {
+                arrayAllIds.push(match);
+              }
+            });
+          }
+        }
+      });      
+    }
+
+    if (continueProcessing) {
+      // Fyll på med distrikt om det saknas, d.v.s. fastighet som saknar adress.
+      const districtPromises = arrayAllIds.map(async obj => {
+        if (!obj.districtname) {
+          const districtResponse = await instance({
+            method: 'GET',
+            url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+            headers: {
+              'content-type': 'application/json'
             }
           });
-        }
-      }
-    });
-
-
-  // Fyll på med distrikt om det saknas, d.v.s. fastighet som saknar adress.
-  try {
-    const districtPromises = arrayAllIds.map(async obj => {
-      if (!obj.districtname) {
-        const districtResponse = await instance({
-          method: 'GET',
-          url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
-          headers: {
-            'content-type': 'application/json'
+          if (!districtResponse.data.districtname) {
+            obj.address = '';
+            obj.districtname = districtResponse.data.distriktsnamn;
+            obj.districtcode = districtResponse.data.distriktskod;
           }
-        });
-        if (!districtResponse.data.districtname) {
-          obj.address = '';
-          obj.districtname = districtResponse.data.distriktsnamn;
-          obj.districtcode = districtResponse.data.distriktskod;
-        }
-     }
-    });
+      }
+      });
+      errorBlock = 'districtPromises';
 
       await Promise.all(districtPromises);
       // Sort the array alphabetically on address
       arrayAllIds.sort((a, b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
-      res.status(200).json(arrayAllIds);
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).send({ error: error.message, block: errorBlock });
   }
+  res.status(200).send(arrayAllIds);
 }
 
 /*
@@ -289,11 +293,11 @@ module.exports = {
         designation = params.get('designation');
       } else {
         validationError = true;
-        res.status(400).json({error: 'Invalid in parameter designation'});
+        res.status(400).send({error: 'Invalid in parameter designation'});
       }
     } else {
       validationError = true;
-      res.status(400).json({error: 'Missing required parameter designation'});
+      res.status(400).send({error: 'Missing required parameter designation'});
     }
     if (designation.length > 0 && !validationError) {
       processRequest(req, res, designation, statusDesignation, maxHits);

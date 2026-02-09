@@ -17,6 +17,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
   const registerenhetIdArr = [];
   const arrayAllIds = [];
   const arrayAddresses = [];
+  let continueProcessing = true;
   
   const instance = axios.create({
     httpsAgent: new (require('https')).Agent({
@@ -35,10 +36,11 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         'scope': `${configOptions.scope}`
       }
     });
+    errorBlock = 'registerResponse';
 
     if (registerResponse.data.length > 0) {
       registerResponse.data.forEach(element => {
-        arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
+        arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet ? element.registerenhet : element.gemensamhetsanlaggning });
         if (typeof element.registerenhet !== 'undefined') {
           registerenhetIdArr.push(element.registerenhet);
         }
@@ -54,6 +56,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         },
         data: registerenhetIdArr
       });
+      errorBlock = 'postResponse';
 
       postResponse.data.features.forEach(element => {
         const addressObj = concatAddress(element);
@@ -66,56 +69,58 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
         });
       });
     } else {
-      res.status(200).json([]);
+      continueProcessing = false;
     }
-  } catch (error) {
-    res.status(500).send({ error: error.message, block: 'registerenhet' });
-  }
 
-  // Ta listan med alla fastigheter och fyll på med adressen till dem.
-  // Om det finns flera adresser på samma fastighet lägg till de också så att de får ett eget objekt i svaret.
-  arrayAllIds.forEach(beteckning => {
-      if (!beteckning.address) {
-        const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
-        if (matches.length > 0) {
-          matches.forEach((match, index) => {
-            if (index === 0) {
-              beteckning.address = match.address;
-              beteckning.districtname = match.districtname;
-              beteckning.districtcode = match.districtcode;
-            } else {
-              arrayAllIds.push(match);
+    if (continueProcessing) {
+      // Ta listan med alla fastigheter och fyll på med adressen till dem.
+      // Om det finns flera adresser på samma fastighet lägg till de också så att de får ett eget objekt i svaret.
+      arrayAllIds.forEach(beteckning => {
+          if (!beteckning.address) {
+            const matches = arrayAddresses.filter(item => item.objectidentifier === beteckning.objectidentifier);
+            if (matches.length > 0) {
+              matches.forEach((match, index) => {
+                if (index === 0) {
+                  beteckning.address = match.address;
+                  beteckning.districtname = match.districtname;
+                  beteckning.districtcode = match.districtcode;
+                } else {
+                  arrayAllIds.push(match);
+                }
+              });
             }
-          });
-        }
-      }
-    });
-
-  // Ta listan med alla fastigheter och fyll på med distrikt på de som saknar, d.v.s. de fastigheter som saknar adress.
-  try {
-    const districtPromises = arrayAllIds.map(async obj => {
-      if (!obj.districtname) {
-        const districtResponse = await instance({
-          method: 'GET',
-          url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
-          headers: {
-            'content-type': 'application/json'
           }
         });
-        if (!districtResponse.data.districtname) {
-          obj.address = '';
-          obj.districtname = districtResponse.data.distriktsnamn;
-          obj.districtcode = districtResponse.data.distriktskod;
+    }
+
+    if (continueProcessing) {
+      // Ta listan med alla fastigheter och fyll på med distrikt på de som saknar, d.v.s. de fastigheter som saknar adress.
+      const districtPromises = arrayAllIds.map(async obj => {
+        if (!obj.districtname && typeof obj.objectidentifier !== 'undefined') {
+          const districtResponse = await instance({
+            method: 'GET',
+            url: encodeURI(configOptions.url_district + 'district/' + obj.objectidentifier + '/by-registerenhet'),
+            headers: {
+              'content-type': 'application/json'
+            }
+          });
+          if (!districtResponse.data.districtname) {
+            obj.address = '';
+            obj.districtname = districtResponse.data.distriktsnamn;
+            obj.districtcode = districtResponse.data.distriktskod;
+          }
         }
-      }
-    });
-    await Promise.all(districtPromises);
-    // Sort the array alphabetically on designation
-    arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
-    res.status(200).json(arrayAllIds);
+      });
+      errorBlock = 'districtPromises';
+
+      await Promise.all(districtPromises);
+      // Sort the array alphabetically on designation
+      arrayAllIds.sort((a, b) => (a.designation > b.designation) ? 1 : ((b.designation > a.designation) ? -1 : 0));
+    }
   } catch (error) {
-    res.status(500).send({ error: error.message, block: 'district' });
+    res.status(500).send({ error: error.message, block: errorBlock });
   }
+  res.status(200).send(arrayAllIds);
 }
 
 /*
