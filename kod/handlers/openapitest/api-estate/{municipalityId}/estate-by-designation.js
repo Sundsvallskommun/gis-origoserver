@@ -18,6 +18,7 @@ async function processRequest(req, res, designation, municipalityId, statusDesig
   const arrayAllIds = [];
   const arrayAddresses = [];
   let continueProcessing = true;
+  let errorBlock = 'initial';
   
   const instance = axios.create({
     httpsAgent: new (require('https')).Agent({
