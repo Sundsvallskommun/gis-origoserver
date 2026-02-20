@@ -17,7 +17,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
   const registerenhetIdArr = [];
   const arrayAllIds = [];
   const arrayAddresses = [];
-  let errorBlock = '';
+  let errorBlock = 'initial';
   let continueProcessing = true;
 
   const instance = axios.create({
