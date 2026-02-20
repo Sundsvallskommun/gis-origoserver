@@ -284,8 +284,8 @@ async function doSearch(req, res, configOptions, q, countynr, srid, format) {
   let arrOtherRoads = [];
 
   try {
-    // Only do the roadnumber request if the search value is a number and the rest orherwise
-    if (typeof q === 'number' && !isNaN(q)) {
+    // Only do the roadnumber request if the search value is a number and the rest otherwise
+    if (!isNaN(q)) {
       const responseRoadNr = await fetchWithBody(bodyQueryRoadNr);
       arrRoadNr = await handleResponse(responseRoadNr, configOptions, q, countynr, srid, format);    
     } else {
