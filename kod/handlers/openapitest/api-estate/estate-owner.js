@@ -343,7 +343,6 @@ module.exports.get.apiDoc = {
     {
       in: 'query',
       name: 'objectidentifier',
-      required: true,
       type: 'string'
     }
   ],
