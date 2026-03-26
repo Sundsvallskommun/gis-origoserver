@@ -37,6 +37,9 @@ if (conf['session']) {
     cookie: Object.assign(
       {
         secure: true,
+        // Use 'auto' so cookies are marked secure when the request is HTTPS,
+        // taking app.set('trust proxy', 1) into account.
+        secure: 'auto',
         httpOnly: true
       },
       configOptions.cookie || {}
