@@ -30,6 +30,7 @@ app.use(limiter);
 
 if (conf['session']) {
   var configOptions = Object.assign({}, conf['session']);
+  var isProduction = process.env.NODE_ENV === 'production';
   app.use(session({
     secret: configOptions.secret,
     resave: false,
@@ -37,9 +38,7 @@ if (conf['session']) {
     cookie: Object.assign(
       {
         secure: true,
-        // Use 'auto' so cookies are marked secure when the request is HTTPS,
-        // taking app.set('trust proxy', 1) into account.
-        secure: 'auto',
+        secure: isProduction,
         httpOnly: true
       },
       configOptions.cookie || {}
