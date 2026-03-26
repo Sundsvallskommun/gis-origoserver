@@ -1,0 +1,47 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-4">
+      <div class="page-header">
+        <h2>Samfällighetsägare</h2>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">Beteckning: {{designation}}</h3>
+        </div>
+
+        {{#each partOwners}}
+          <div class="card-body mb-3 border-bottom">
+            {{#if designation}}
+              <p class="mb-0">Beteckning: <b>{{designation}}</b></p>
+            {{/if}}
+            {{#if objectidentifier}}
+              <p class="mb-0">Objektidentitet: {{objectidentifier}}</p>
+            {{/if}}
+
+            <b>Lagfarna ägare:</b>
+            {{#each ownership}}
+              {{#if idnumber}}
+                <p class="mb-0">Idnummer: {{idnumber}}</p>
+              {{/if}}
+              {{#if name}}
+                <p class="mb-0">Namn: {{name}}</p>
+              {{/if}}
+            {{/each}}
+
+            <b>Taxerad ägare:</b>
+            {{#each taxedOwners}}
+              {{#if idnumber}}
+                <p class="mb-0">Idnummer: {{idnumber}}</p>
+              {{/if}}
+              {{#if name}}
+                <p class="mb-0">Namn: {{name}}</p>
+              {{/if}}
+            {{/each}}
+          </div>
+        {{else}}
+          <p>Inga delägare tillgängliga.</p>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</div>

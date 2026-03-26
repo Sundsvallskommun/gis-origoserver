@@ -5,6 +5,34 @@ const axios = require('axios').default;
 
 var proxyUrl = 'apiEstateTest';
 
+async function getTaxation(configOptions, tokenTaxation, objectidentifier) {
+    const responseArray = [];
+
+    try {
+        const response = await axios({
+            method: 'GET',
+            url: encodeURI(`${configOptions.url_taxation}/referens/beror/${objectidentifier}`),
+            headers: {
+                'Authorization': `Bearer ${tokenTaxation}`,
+                'Content-Type': 'application/json',
+                'Scope': configOptions.scope
+            }
+        });
+        
+        // Check if data exists and has the expected structure
+        if (response.data && response.data.taxeringsenhetsreferens) {
+            response.data.taxeringsenhetsreferens.forEach(element => {
+                responseArray.push(element.taxeringsenhetsnummer);
+            });
+        }
+        
+        return responseArray; // Return the array
+
+    } catch (error) {
+        console.log('Error fetching taxation id:', error);
+    }
+}
+
 async function doGet(req, res, objectidentifier) {
   const configOptions = Object.assign({}, conf[proxyUrl]);
   configOptions.type = 'owner';
@@ -13,11 +41,14 @@ async function doGet(req, res, objectidentifier) {
   var tokenOwner = await simpleStorage.getToken(configOptions);
   configOptions.type = 'estate';
   var tokenEstate = await simpleStorage.getToken(configOptions);
+  configOptions.type = 'taxation';
+  var tokenTaxation = await simpleStorage.getToken(configOptions);
  
   const checkUuidRegEx = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/i;
   let found = objectidentifier.match(checkUuidRegEx);
   if (found !== null) {
     if (objectidentifier !== '') {
+        var arrTaxationId = await getTaxation(configOptions, tokenTaxation, objectidentifier);
         Promise.all([axios({
           method: 'GET',
           url: encodeURI(configOptions.url_owner + '/beror/' + objectidentifier + '?includeData=total'),
@@ -34,7 +65,16 @@ async function doGet(req, res, objectidentifier) {
             'content-type': 'application/json',
             'scope': `${configOptions.scope}`
             }
-        })]).then(([reqOwner,reqEstate]) => {
+        }),axios({
+          method: 'POST',
+          url: encodeURI(configOptions.url_taxation+ '/' + '?includeData=total'),
+          headers: {
+            'Authorization': 'Bearer ' + tokenEstate,
+            'content-type': 'application/json',
+            'scope': `${configOptions.scope}`
+            },
+          data: { "taxeringsenhetsnummer": arrTaxationId }
+        })]).then(([reqOwner,reqEstate,reqTaxation]) => {
           if (reqOwner.data.features.length > 0) {
             responseObj.designation = reqOwner.data.features[0].properties.fastighetsreferens.beteckning;
             responseObj.objectidentifier = reqOwner.data.features[0].properties.fastighetsreferens.objektidentitet;
@@ -264,10 +304,27 @@ async function doGet(req, res, objectidentifier) {
                 })
               });
             }
+            // const taxationEstatesArr = [];
+            let taxationObj = {};
+            if ('taxeringsenhetsnummer' in reqTaxation.data.features[0].properties) {
+              taxationObj = reqTaxation.data.features[0].properties;
+              /*if ('skvFastighet' in reqTaxation.data.features[0].properties) {
+                reqTaxation.data.features[0].properties.skvFastighet.forEach(estate => {
+                  taxationEstatesArr.push(estate);
+                });
+              }
+              taxationObj = {
+                typ: reqTaxation.data.features[0].properties.typ,
+                taxeringsenhetsnummer: reqTaxation.data.features[0].properties.taxeringsenhetsnummer,
+                taxeringsenhetsattribut: reqTaxation.data.features[0].properties.taxeringsenhetsattribut ? reqTaxation.data.features[0].properties.taxeringsenhetsattribut : {},
+                skvFastighet: taxationEstatesArr
+              };*/
+            }
             responseObj.ownership = ownershipArr;
             responseObj.mortage = mortageArr;
             responseObj.previousOwnership = previousOwnershipArr;
             responseObj.actions = estateActionsArr;
+            responseObj.taxation = taxationObj;
             res.status(200).json(responseObj);
           } else {
             res.status(400).json({error: 'Not found'});
@@ -294,11 +351,11 @@ module.exports = {
     } else {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
-    if (!ip.includes(configOptions.allowedIP)) {
-      res.status(400).json({error: 'Request not allowed from this IP!'});
-    } else {
+    //if (!ip.includes(configOptions.allowedIP)) {
+      //res.status(400).json({error: 'Request not allowed from this IP!'});
+    //} else {
       doGet(req, res, objectidentifier);
-    }
+    //}
   },
 };
 

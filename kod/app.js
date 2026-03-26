@@ -1,4 +1,5 @@
 var express = require('express');
+const session = require('express-session');
 var path = require('path');
 var cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -25,6 +26,16 @@ const limiter = rateLimit({
 
 // apply rate limiter to all requests
 app.use(limiter);
+
+if (conf['session']) {
+  var configOptions = Object.assign({}, conf['session']);
+  app.use(session({
+    secret: configOptions.secret,
+    resave: false,
+    saveUninitialized: true,
+  }));
+}
+
 
 app.use(bodyParser.json())
 
