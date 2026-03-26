@@ -31,18 +31,27 @@ app.use(limiter);
 if (conf['session']) {
   var configOptions = Object.assign({}, conf['session']);
   var isProduction = process.env.NODE_ENV === 'production';
+  
+  // Build cookie options in a way that always enforces Secure in production
+  var cookieOptions = {
+    httpOnly: true
+  };
+
+  if (configOptions.cookie) {
+    // Start from configured cookie options
+    cookieOptions = Object.assign({}, cookieOptions, configOptions.cookie);
+  }
+
+  if (isProduction) {
+    // Never allow disabling Secure cookies in production
+    cookieOptions.secure = true;
+  }
+
   app.use(session({
     secret: configOptions.secret,
     resave: false,
     saveUninitialized: true,
-    cookie: Object.assign(
-      {
-        secure: true,
-        secure: isProduction,
-        httpOnly: true
-      },
-      configOptions.cookie || {}
-    )
+    cookie: cookieOptions
   }));
 }
 
