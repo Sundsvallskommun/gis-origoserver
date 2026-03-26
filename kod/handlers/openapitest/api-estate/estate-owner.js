@@ -311,16 +311,22 @@ async function doGet(req, res, objectidentifier) {
 module.exports = {
   get: function (req, res, next) {
     const configOptions = Object.assign({}, conf[proxyUrl]);
-    ensureAuthenticated(req, res, next, configOptions);
     const fullUrl = req.protocol + '://' + req.get('host') + req.url;
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
-    var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
-    let objectidentifier = '';
-    if (params.has('objectidentifier')) {
-      objectidentifier = params.get('objectidentifier');
+    req.session.queryParams = params;
+    ensureAuthenticated(req, res, next, configOptions);
+    //var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
+    const userinfo = req.session.userinfo;
+    if (configOptions.allowedIP.includes(userinfo.sub)) {
+      let objectidentifier = '';
+      if (req.session.queryParams.has('objectidentifier')) {
+        objectidentifier = req.session.queryParams.get('objectidentifier');
+      } else {
+        res.status(400).json({error: 'Missing required parameter objectidentifier'});
+      }
     } else {
-      res.status(400).json({error: 'Missing required parameter objectidentifier'});
+        res.status(400).json({error: 'Du är inte behörig!'});
     }
     //if (!ip.includes(configOptions.allowedIP)) {
       //res.status(400).json({error: 'Request not allowed from this IP!'});
