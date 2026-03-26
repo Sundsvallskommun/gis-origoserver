@@ -16,6 +16,7 @@ var authSamlRouter = require('./handlers/authsaml');
 const bodyParser = require('body-parser');
 
 var app = express();
+app.set('trust proxy', 1);
 
 const limiter = rateLimit({
 	windowMs: 5 * 60 * 1000, // 5 minutes
@@ -33,6 +34,13 @@ if (conf['session']) {
     secret: configOptions.secret,
     resave: false,
     saveUninitialized: true,
+    cookie: Object.assign(
+      {
+        secure: true,
+        httpOnly: true
+      },
+      configOptions.cookie || {}
+    )
   }));
 }
 
