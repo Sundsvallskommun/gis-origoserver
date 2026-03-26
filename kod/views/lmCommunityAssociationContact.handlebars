@@ -1,0 +1,55 @@
+    <style>
+        @page {
+            margin: 0; /* Avlägsna marginaler för att säkerställa att etiketter skrivs ut korrekt */
+        }
+
+        body {
+            margin: 10mm; /* Lite marginal runt hela sidan för att kompensera för skrivarens marginaler */
+            font-family: Arial, sans-serif;
+            font-size: 10pt; /* Justera typsnittsstorlek som önskas */
+        }
+
+        .etikett {
+            width: 89mm; /* Bredd på etikett */
+            height: 44mm; /* Höjd på etikett */
+            display: inline-block; /* Se till att etiketterna ligger i rad */
+            margin: 0; /* Ta bort marginaler */
+            padding: 5mm; /* Inre marginal för text i etiketten */
+            box-sizing: border-box; /* Inkludera padding i total storlek */
+            border: 1px solid #000; /* Valfritt: lägg till en ram kring varje etikett */
+            page-break-inside: avoid; /* Undvik att dela etiketter över sidor */
+            overflow: hidden; /* För att undvika overflow av text */
+        }
+
+        .etikett h3 {
+            margin: 0; /* Ta bort marginaler för rubrik */
+            font-size: 12pt; /* Justera typsnittsstorlek som önskas */
+            font-weight: bold;
+        }
+
+        .etikett p {
+            margin: 5px 0; /* Lätt marginal mellan textblock */
+        }
+    </style>
+{{#each associations}}
+  <div class="etikett">
+      {{#if foreningensForetagsnamn}}
+        <h3>{{foreningensForetagsnamn}}</h3>
+      {{/if}}
+      {{#if coAdress}}
+        <p>c/o {{coAdress}}</p>
+      {{/if}}
+      {{#if utdelningsadress1}}
+        <p>{{utdelningsadress1}}</p>
+      {{/if}}
+      {{#if utdelningsadress2}}
+        <p>{{utdelningsadress2}}</p>
+      {{/if}}
+      {{#if postnummer}}
+        <p>{{postnummer}} 
+      {{/if}}
+      {{#if postort}}
+        {{postort}}</p>
+      {{/if}}
+  </div>
+{{/each}}

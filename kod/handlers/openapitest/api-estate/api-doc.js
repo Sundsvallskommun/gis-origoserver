@@ -412,6 +412,47 @@ module.exports = {
           type: 'integer'
         }
       }
+    },
+    EstateOwner: {
+      type: 'object',
+      properties: {
+        designation: {
+          description: 'The designation of the estate.',
+          type: 'string'
+        },
+        objectidentifier: {
+          description: 'The unique identifier of the estate.',
+          type: 'string'
+        },
+        ownership: {
+          description: 'The current ownership of the estate.',
+          type: 'array',
+          items: {
+            "$ref": "#/definitions/Owner"
+          }
+        },
+        taxedowner: {
+          description: 'The taxed ownership of the estate.',
+          type: 'array',
+          items: {
+            "$ref": "#/definitions/Owner"
+          }
+        }
+      }
+    },
+    Owner: {
+      description: 'The owners of a estate.',
+      type: 'object',
+      properties: {
+        idnumber: {
+          description: 'The id number of owner i.e. organisation number or person number.',
+          type: 'string'
+        },
+        name: {
+          description: 'The name of owner person or organisation.',
+          type: 'string'
+        }
+      }
     }
   },
 
