@@ -15,6 +15,7 @@ module.exports = async function access_token(req, res) {
         code: code,
         redirect_uri: conf.auth.redirect_uri
       });
+      req.session.tokenSet = token_set;
     } else if (refresh_token && refresh_token.length) {
       token_set = await client.grant({
         grant_type: 'refresh_token',
@@ -25,6 +26,7 @@ module.exports = async function access_token(req, res) {
     }
     if (token_set !== null) {
       const user_info = await client.userinfo(token_set.access_token);
+      req.session.userinfo = user_info;
       res.json({
         authenticated: true,
         access_token: token_set.access_token,

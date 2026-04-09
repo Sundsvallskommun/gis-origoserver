@@ -7,11 +7,17 @@ var proxyUrl = 'apiEstateTest';
 
 // Middleware för att kräva autentisering
 function ensureAuthenticated(req, res, next, configOptions) {
-  if (req.session.userinfo) {
-    next();
-  } else {
-    res.redirect(configOptions.url_auth);
+  if (req.session && req.session.userinfo) {
+    // Användaren är redan autentiserad
+    return next();
   }
+  // Spara den ursprungliga URL:en om den inte redan är sparad
+  if (!req.session.returnTo) {
+    req.session.returnTo = req.originalUrl;
+  }
+
+  // Starta OpenID Connect-autentisering
+  res.redirect(configOptions.url_auth);
 }
 
 async function getTaxation(configOptions, tokenTaxation, objectidentifier) {
@@ -112,6 +118,8 @@ async function doGet(req, res, objectidentifier) {
 
   const fullUrl = `http://${req.headers.host}${req.url}`;
   const parsedURL = new URL(fullUrl);
+  const qp = req.session.savedQueryParams || {};
+  const type = qp.type; 
 
   const checkUuidRegEx = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/i;
   let found = objectidentifier.match(checkUuidRegEx);
@@ -210,7 +218,7 @@ async function doGet(req, res, objectidentifier) {
                     partOwner.taxedOwners = taxedOwnerObj[refObject];
                 }
               });
-              if (parsedURL.searchParams.get('type') === 'html') {
+              if (type === 'html') {
                 res.render('lmEstateOwnersSamfallighet', responseObj);
               } else {
                 res.status(200).json(responseObj);
@@ -290,7 +298,7 @@ async function doGet(req, res, objectidentifier) {
               }
               responseObj.ownership = ownershipArr;
               responseObj.taxedOwners = taxationEstatesArr;
-              if (parsedURL.searchParams.get('type') === 'html') {
+              if (type === 'html') {
                 res.render('lmEstateOwners', responseObj);
               } else {
                 res.status(200).json(responseObj);
@@ -314,17 +322,52 @@ module.exports = {
     const fullUrl = req.protocol + '://' + req.get('host') + req.url;
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
-    req.session.queryParams = params;
+    
+    // Spara originalURL och query-parametrar i sessionen INNAN autentisering
+    if (params.toString()) {
+      req.session.savedQueryParams = Object.fromEntries(params);
+      req.session.returnTo = req.originalUrl; // Spara hela den ursprungliga URL:en
+    }
+
     ensureAuthenticated(req, res, next, configOptions);
     //var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
+
+    // Efter lyckad autentisering, återställ den ursprungliga URL:en
+    if (req.session.returnTo) {
+      const returnTo = req.session.returnTo;
+      delete req.session.returnTo; // Rensa returnTo efter användning
+
+      // Kontrollera att returnTo är en relativ URL för att undvika open redirect
+      if (returnTo.startsWith('/')) {
+        // Uppdatera parsedUrl med den återställda URL:en
+        const restoredUrl = new URL(req.protocol + '://' + req.get('host') + returnTo);
+        const restoredParams = restoredUrl.searchParams;
+        req.session.savedQueryParams = Object.fromEntries(restoredParams);
+      }
+    }
+
     const userinfo = req.session.userinfo;
     if (configOptions.allowedIP.includes(userinfo.sub)) {
       let objectidentifier = '';
-      if (req.session.queryParams.has('objectidentifier')) {
-        objectidentifier = req.session.queryParams.get('objectidentifier');
+
+      // Försök hämta parametern från URL:en först,
+      // annars från sparade parametrar i sessionen
+      if (params.has('objectidentifier')) {
+        objectidentifier = params.get('objectidentifier');
+        // Uppdatera sparade parametrar
+        req.session.savedQueryParams = Object.fromEntries(params);
+      } else if (req.session.savedQueryParams &&
+                 req.session.savedQueryParams.objectidentifier) {
+        objectidentifier = req.session.savedQueryParams.objectidentifier;
       } else {
-        res.status(400).json({error: 'Missing required parameter objectidentifier'});
+        return res.status(400).json({
+          error: 'Missing required parameter objectidentifier'
+        });
       }
+
+      // Rensa sparade parametrar efter användning
+      delete req.session.savedQueryParams;
+
     } else {
         res.status(400).json({error: 'Du är inte behörig!'});
     }
