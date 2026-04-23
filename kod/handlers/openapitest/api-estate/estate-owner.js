@@ -2,22 +2,42 @@ const conf = require('../../../conf/config');
 const { URL } = require('url'); 
 const simpleStorage = require('../simpleStorage');
 const axios = require('axios').default;
+const crypto = require('crypto');
+const { generators } = require('openid-client');
+const openidIssuer = require('../../auth/openidIssuer');
 
 var proxyUrl = 'apiEstateTest';
 
-// Middleware för att kräva autentisering
-function ensureAuthenticated(req, res, next, configOptions) {
-  if (req.session && req.session.userinfo) {
-    // Användaren är redan autentiserad
-    return next();
-  }
-  // Spara den ursprungliga URL:en om den inte redan är sparad
-  if (!req.session.returnTo) {
-    req.session.returnTo = req.originalUrl;
-  }
+function base64url(buf) {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
-  // Starta OpenID Connect-autentisering
-  res.redirect(configOptions.url_auth);
+function ensureAuthenticated(req, res, next, configOptions, client) {
+  console.log('ensureAuthenticated');
+  if (req.session?.userinfo) return next();
+
+  if (!req.session.returnTo) req.session.returnTo = req.originalUrl;
+
+  const code_verifier = generators.codeVerifier();
+  const code_challenge = generators.codeChallenge(code_verifier);
+  const state = generators.state();
+  console.log('state');
+
+  req.session.code_verifier = code_verifier;
+  req.session.oidc_state = state;
+  console.log(req.session);
+
+  const authorizationUrl = client.authorizationUrl({
+    scope: configOptions.scope_auth,
+    response_type: 'code',
+    redirect_uri: configOptions.redirect_uri,
+    state,
+    code_challenge,
+    code_challenge_method: 'S256',
+  });
+  console.log('pre redirect');
+
+  return res.redirect(authorizationUrl);
 }
 
 async function getTaxation(configOptions, tokenTaxation, objectidentifier) {
@@ -317,22 +337,25 @@ async function doGet(req, res, objectidentifier) {
 }
 
 module.exports = {
-  get: function (req, res, next) {
+  get: async function (req, res, next) {
     const configOptions = Object.assign({}, conf[proxyUrl]);
     const fullUrl = req.protocol + '://' + req.get('host') + req.url;
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
     
     // Spara originalURL och query-parametrar i sessionen INNAN autentisering
-    if (params.toString()) {
+    /*if (params.toString()) {
       req.session.savedQueryParams = Object.fromEntries(params);
       req.session.returnTo = req.originalUrl; // Spara hela den ursprungliga URL:en
     }
-
-    ensureAuthenticated(req, res, next, configOptions);
-    //var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
+    console.log(req.session);
+    const client = await openidIssuer.getOpenidClient();
+    await ensureAuthenticated(req, res, next, configOptions, client);
+    */
+    var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
 
     // Efter lyckad autentisering, återställ den ursprungliga URL:en
+    /*
     if (req.session.returnTo) {
       const returnTo = req.session.returnTo;
       delete req.session.returnTo; // Rensa returnTo efter användning
@@ -344,10 +367,10 @@ module.exports = {
         const restoredParams = restoredUrl.searchParams;
         req.session.savedQueryParams = Object.fromEntries(restoredParams);
       }
-    }
+    }*/
 
-    const userinfo = req.session.userinfo;
-    if (configOptions.allowedIP.includes(userinfo.sub)) {
+    /*const userinfo = req.session.userinfo;
+    if (configOptions.allowedUsers.includes(userinfo.sub)) {
       let objectidentifier = '';
 
       // Försök hämta parametern från URL:en först,
@@ -367,20 +390,27 @@ module.exports = {
 
       // Rensa sparade parametrar efter användning
       delete req.session.savedQueryParams;
-
+      doGet(req, res, objectidentifier);
     } else {
         res.status(400).json({error: 'Du är inte behörig!'});
+    }*/
+    let objectidentifier = '';
+    if (params.has('objectidentifier')) {
+      objectidentifier = params.get('objectidentifier');
+    } else {
+      res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
-    //if (!ip.includes(configOptions.allowedIP)) {
-      //res.status(400).json({error: 'Request not allowed from this IP!'});
-    //} else {
+
+    if (!ip.includes(configOptions.allowedIP)) {
+      res.status(400).json({error: 'Request not allowed from this IP!'});
+    } else {
       doGet(req, res, objectidentifier);
-    //}
+    }
   },
 };
 
 module.exports.get.apiDoc = {
-  description: 'Get information about estate.',
+  description: 'Get the owners of an estate both legal and taxed.',
   operationId: 'getEstateQwners',
   parameters: [
     {
