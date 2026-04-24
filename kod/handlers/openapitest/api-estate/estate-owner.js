@@ -394,6 +394,8 @@ module.exports = {
     } else {
         res.status(400).json({error: 'Du är inte behörig!'});
     }*/
+    var isLocal = (req.connection.localAddress === req.connection.remoteAddress);
+    console.log(isLocal);
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
@@ -401,7 +403,8 @@ module.exports = {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
 
-    if (!ip.includes(configOptions.allowedIP)) {
+    //if (!ip.includes(configOptions.allowedIP)) {
+    if (!isLocal) {
       res.status(400).json({error: 'Request not allowed from this IP!'});
     } else {
       doGet(req, res, objectidentifier);
