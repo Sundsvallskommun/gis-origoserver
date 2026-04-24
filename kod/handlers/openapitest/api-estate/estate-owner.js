@@ -395,7 +395,7 @@ module.exports = {
         res.status(400).json({error: 'Du är inte behörig!'});
     }*/
     var isLocal = (req.connection.localAddress === req.connection.remoteAddress);
-    console.log(isLocal);
+    console.log(req.hostname);
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
@@ -404,7 +404,7 @@ module.exports = {
     }
 
     //if (!ip.includes(configOptions.allowedIP)) {
-    if (!isLocal) {
+    if (!configOptions.allowedHosts.includes(req.hostname)) {
       res.status(400).json({error: 'Request not allowed from this IP!'});
     } else {
       doGet(req, res, objectidentifier);
