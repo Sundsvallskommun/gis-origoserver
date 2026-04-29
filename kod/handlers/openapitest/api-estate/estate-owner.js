@@ -394,21 +394,25 @@ module.exports = {
     } else {
         res.status(400).json({error: 'Du är inte behörig!'});
     }*/
-    var isLocal = (req.connection.localAddress === req.connection.remoteAddress);
-    console.log(req.hostname);
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
     } else {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
+    const user = req.session?.loggedInUser;
+    console.log(req.hostname);
+    console.log(user);
 
-    //if (!ip.includes(configOptions.allowedIP)) {
-    if (!configOptions.allowedHosts.includes(req.hostname)) {
-      res.status(400).json({error: 'Request not allowed from this IP!'});
-    } else {
-      doGet(req, res, objectidentifier);
+    if (
+      !user ||
+      !configOptions.allowedHosts.includes(req.hostname) ||
+      !configOptions.allowedUsers.includes(user)
+    ) {
+      return res.status(403).json({ error: "Request not allowed" });
     }
+
+    return doGet(req, res, objectidentifier);
   },
 };
 

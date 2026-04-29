@@ -367,7 +367,7 @@ async function doProcessRequests(req, res, configOptions, token) {
 
                             arrSamfallPromises.push(promise);
                         }
-                        const result = {};
+                        let result = {};
                         if (geojson) {
                             result = await addGeometryAndMakeGeojson(arrSamfallPromises, configOptions, token, srid);
                             res.send(result);
