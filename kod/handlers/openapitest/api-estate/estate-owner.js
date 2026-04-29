@@ -403,7 +403,7 @@ module.exports = {
     const user = req.session?.loggedInUser;
     console.log(req.hostname);
     console.log(user);
-
+    console.log(req.secure, req.headers['x-forwarded-proto']);
     if (
       !user ||
       !configOptions.allowedHosts.includes(req.hostname) ||
