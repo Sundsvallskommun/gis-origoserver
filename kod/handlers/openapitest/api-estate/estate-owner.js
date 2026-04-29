@@ -401,10 +401,13 @@ module.exports = {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
     const user = req.session?.loggedInUser;
-    console.log(req.hostname, user, !user, !configOptions.allowedHosts.includes(req.hostname), !configOptions.allowedUsers.includes(user));
+    const hostname = (req.hostname || '').trim().toLowerCase();
+    const allowed = (configOptions.allowedHosts || []).map(h => h.trim().toLowerCase());
+
+    console.log(req.hostname, user, !user, !configOptions.allowedHosts.includes(req.hostname), !allowed.includes(hostname), !configOptions.allowedUsers.includes(user));
     if (
       !user ||
-      !configOptions.allowedHosts.includes(req.hostname) ||
+      !allowed.includes(hostname) ||
       !configOptions.allowedUsers.includes(user)
     ) {
       return res.status(403).json({ error: "Request not allowed" });
