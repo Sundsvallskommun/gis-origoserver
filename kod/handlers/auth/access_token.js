@@ -38,7 +38,8 @@ module.exports = async function access_token(req, res) {
       });
     }
   } catch (e) {
-    console.error(e.toString());
+    console.error('access_token error', e);
+    console.error('body', req.body);
     res.status(500).send('access_token error');
   }
 };

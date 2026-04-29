@@ -407,7 +407,7 @@ module.exports = {
     console.log(req.hostname, user, !user, !configOptions.allowedHosts.includes(req.hostname), !allowed.includes(hostname), !configOptions.allowedUsers.includes(user));
     if (
       !user ||
-      !allowed.includes(hostname) ||
+      //!allowed.includes(hostname) ||
       !configOptions.allowedUsers.includes(user)
     ) {
       return res.status(403).json({ error: "Request not allowed" });
