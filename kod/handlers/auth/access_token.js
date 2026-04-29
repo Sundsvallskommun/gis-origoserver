@@ -39,7 +39,10 @@ module.exports = async function access_token(req, res) {
     }
   } catch (e) {
     console.error('access_token error', e);
-    console.error('body', req.body);
+    const safeBodyForLog = (JSON.stringify(req.body) || String(req.body))
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n');
+    console.error('body', safeBodyForLog);
     res.status(500).send('access_token error');
   }
 };
