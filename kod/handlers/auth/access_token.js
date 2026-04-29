@@ -27,13 +27,9 @@ module.exports = async function access_token(req, res) {
     if (token_set !== null) {
       const user_info = await client.userinfo(token_set.access_token);
       req.session.userinfo = user_info;
-      req.session.loggedInUser = user_info[conf.auth.display_name];
+      req.session.loggedInUser = user_info.sub;
       console.log('auth loggedInUser');
       console.log(req.session.loggedInUser);
-      req.session.save(err => {
-        if (err) return next(err);
-        res.json({ ok: true });
-      });
       res.json({
         authenticated: true,
         access_token: token_set.access_token,
