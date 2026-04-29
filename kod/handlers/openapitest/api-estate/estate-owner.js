@@ -401,9 +401,7 @@ module.exports = {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
     const user = req.session?.loggedInUser;
-    console.log(req.hostname);
-    console.log(user);
-    console.log(req.secure, req.headers['x-forwarded-proto']);
+    console.log(req.hostname, user, !user, !configOptions.allowedHosts.includes(req.hostname), !configOptions.allowedUsers.includes(user));
     if (
       !user ||
       !configOptions.allowedHosts.includes(req.hostname) ||
