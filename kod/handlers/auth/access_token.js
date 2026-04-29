@@ -38,7 +38,12 @@ module.exports = async function access_token(req, res) {
       });
     }
   } catch (e) {
-    console.error(e.toString());
+    console.error('access_token error', e);
+    const rawBodyForLog = JSON.stringify(req.body) || String(req.body);
+    const safeBodyForLog = rawBodyForLog
+      .replace(/[\x00-\x1F\x7F]/g, ' ')
+      .slice(0, 2000);
+    console.error('body', safeBodyForLog);
     res.status(500).send('access_token error');
   }
 };
