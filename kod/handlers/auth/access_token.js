@@ -28,8 +28,6 @@ module.exports = async function access_token(req, res) {
       const user_info = await client.userinfo(token_set.access_token);
       req.session.userinfo = user_info;
       req.session.loggedInUser = user_info.sub;
-      console.log('auth loggedInUser');
-      console.log(req.session.loggedInUser);
       res.json({
         authenticated: true,
         access_token: token_set.access_token,
