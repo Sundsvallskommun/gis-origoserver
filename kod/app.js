@@ -34,7 +34,9 @@ if (conf['session']) {
   
   // Build cookie options in a way that always enforces Secure in production
   var cookieOptions = {
-    httpOnly: true
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
   };
 
   if (configOptions.cookie) {
