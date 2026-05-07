@@ -13,7 +13,6 @@ function base64url(buf) {
 }
 
 function ensureAuthenticated(req, res, next, configOptions, client) {
-  console.log('ensureAuthenticated');
   if (req.session?.userinfo) return next();
 
   if (!req.session.returnTo) req.session.returnTo = req.originalUrl;
@@ -21,11 +20,9 @@ function ensureAuthenticated(req, res, next, configOptions, client) {
   const code_verifier = generators.codeVerifier();
   const code_challenge = generators.codeChallenge(code_verifier);
   const state = generators.state();
-  console.log('state');
 
   req.session.code_verifier = code_verifier;
   req.session.oidc_state = state;
-  console.log(req.session);
 
   const authorizationUrl = client.authorizationUrl({
     scope: configOptions.scope_auth,
@@ -35,7 +32,6 @@ function ensureAuthenticated(req, res, next, configOptions, client) {
     code_challenge,
     code_challenge_method: 'S256',
   });
-  console.log('pre redirect');
 
   return res.redirect(authorizationUrl);
 }
@@ -271,6 +267,7 @@ async function doGet(req, res, objectidentifier) {
               if ('agande' in reqOwner.data.features[0].properties) {
                 reqOwner.data.features[0].properties.agande.forEach(lagfart => {
                   let ownernName = '';
+                  let ownernType = '';
                   if ('fornamn' in lagfart.agare) {
                     ownernName = lagfart.agare.fornamn + ' ';
                   }
@@ -280,19 +277,27 @@ async function doGet(req, res, objectidentifier) {
                   if ('organisationsnamn' in lagfart.agare) {
                     ownernName = lagfart.agare.organisationsnamn;
                   }
+                  if ('person' in lagfart.agare) {
+                    ownernType = 'person';
+                  }
+                  if ('organisation' in lagfart.agare) {
+                    ownernType = 'organisation';
+                  }
                   ownershipArr.push({
                     idnumber: lagfart.agare.idnummer,
-                    name: ownernName
+                    name: ownernName,
+                    type: ownernType
                   });
                 });
               }
 
               const taxationEstatesArr = [];
-              if ('taxeringsenhetsnummer' in reqTaxation.data.features[0].properties) {
+              if ('taxeringsenhetsnummer' in (reqTaxation.data.features?.[0]?.properties ?? {})) {
                 if ('skvFastighet' in reqTaxation.data.features[0].properties) {
                   reqTaxation.data.features[0].properties.skvFastighet.forEach(estate => {
                     estate.taxeradAgare.forEach(taxedowner => {
                       let taxedOwnernName = '';
+                      let ownernType = '';
                       if ('person' in taxedowner) {
                         if ('fornamn' in taxedowner.person) {
                           taxedOwnernName = taxedowner.person.fornamn + ' ';
@@ -300,16 +305,19 @@ async function doGet(req, res, objectidentifier) {
                         if ('efternamn' in taxedowner.person) {
                           taxedOwnernName = taxedOwnernName + taxedowner.person.efternamn;
                         }
+                        ownernType = 'person';
                       }
                       if ('organisation' in taxedowner) {
                         if ('organisationsnamn' in taxedowner.organisation) {
                           taxedOwnernName = taxedowner.organisation.organisationsnamn;
                         }
+                        ownernType = 'organisation';
                       }
                       if (!taxationEstatesArr.some(item => item.idnumber === taxedowner.idNummer)) {
                         taxationEstatesArr.push({ 
                           idnumber: taxedowner.idNummer, 
-                          name: taxedOwnernName 
+                          name: taxedOwnernName,
+                          type: ownernType
                         });                      
                       }
                     });
@@ -343,71 +351,20 @@ module.exports = {
     const parsedUrl = new URL(fullUrl);
     const params = parsedUrl.searchParams;
     
-    // Spara originalURL och query-parametrar i sessionen INNAN autentisering
-    /*if (params.toString()) {
-      req.session.savedQueryParams = Object.fromEntries(params);
-      req.session.returnTo = req.originalUrl; // Spara hela den ursprungliga URL:en
-    }
-    console.log(req.session);
-    const client = await openidIssuer.getOpenidClient();
-    await ensureAuthenticated(req, res, next, configOptions, client);
-    */
-    var ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
-
-    // Efter lyckad autentisering, återställ den ursprungliga URL:en
-    /*
-    if (req.session.returnTo) {
-      const returnTo = req.session.returnTo;
-      delete req.session.returnTo; // Rensa returnTo efter användning
-
-      // Kontrollera att returnTo är en relativ URL för att undvika open redirect
-      if (returnTo.startsWith('/')) {
-        // Uppdatera parsedUrl med den återställda URL:en
-        const restoredUrl = new URL(req.protocol + '://' + req.get('host') + returnTo);
-        const restoredParams = restoredUrl.searchParams;
-        req.session.savedQueryParams = Object.fromEntries(restoredParams);
-      }
-    }*/
-
-    /*const userinfo = req.session.userinfo;
-    if (configOptions.allowedUsers.includes(userinfo.sub)) {
-      let objectidentifier = '';
-
-      // Försök hämta parametern från URL:en först,
-      // annars från sparade parametrar i sessionen
-      if (params.has('objectidentifier')) {
-        objectidentifier = params.get('objectidentifier');
-        // Uppdatera sparade parametrar
-        req.session.savedQueryParams = Object.fromEntries(params);
-      } else if (req.session.savedQueryParams &&
-                 req.session.savedQueryParams.objectidentifier) {
-        objectidentifier = req.session.savedQueryParams.objectidentifier;
-      } else {
-        return res.status(400).json({
-          error: 'Missing required parameter objectidentifier'
-        });
-      }
-
-      // Rensa sparade parametrar efter användning
-      delete req.session.savedQueryParams;
-      doGet(req, res, objectidentifier);
-    } else {
-        res.status(400).json({error: 'Du är inte behörig!'});
-    }*/
     let objectidentifier = '';
     if (params.has('objectidentifier')) {
       objectidentifier = params.get('objectidentifier');
     } else {
       res.status(400).json({error: 'Missing required parameter objectidentifier'});
     }
-    const user = req.session?.loggedInUser;
-    const hostname = (req.hostname || '').trim().toLowerCase();
-    const allowed = (configOptions.allowedHosts || []).map(h => h.trim().toLowerCase());
+    let user = req.session?.loggedInUser;
+    /*const hostname = (req.hostname || '').trim().toLowerCase();
+    if(hostname === 'localhost') {
+      user = 'joh17bla'
+    }*/
 
-    console.log(req.hostname, user, !user, !configOptions.allowedHosts.includes(req.hostname), !allowed.includes(hostname), !configOptions.allowedUsers.includes(user));
     if (
       !user ||
-      //!allowed.includes(hostname) ||
       !configOptions.allowedUsers.includes(user)
     ) {
       return res.status(403).json({ error: "Request not allowed" });
