@@ -145,101 +145,119 @@ async function doGet(req, res, objectidentifier) {
         if (estateType.typ === 'samfällighet') {
           const arrObjektid = [];
           const arrDelagare = [];
+          const arrOtherDelagare = [];
           responseObj.designation = estateType.beteckning;
           estateType.delagare.forEach(delagare => {
-            arrObjektid.push(delagare.delagare.objektidentitet);
+            if (delagare?.delagare?.objektidentitet) {
+              arrObjektid.push(delagare.delagare.objektidentitet);
+            }
+            if (delagare?.annanDelagare?.objektidentitet) {
+              arrOtherDelagare.push({ objektidentitet: delagare.annanDelagare.objektidentitet, skifteslagDelagare: delagare.annanDelagare.skifteslagDelagare });
+            }
           });
           var arrTaxationObj = await getTaxationIDFromArrayOfReferensenhet(configOptions, tokenTaxation, arrObjektid);
           const arrTaxationId = arrTaxationObj.map(tax => tax.taxeringsId);
-          Promise.all([axios({
-            method: 'POST',
-            url: encodeURI(configOptions.url_owner + '/beror?includeData=agareAktuella'),
-            headers: {
-              'Authorization': 'Bearer ' + tokenOwner,
-              'content-type': 'application/json',
-              'scope': `${configOptions.scope}`
-              },
-            data: arrObjektid
-            }),axios({
+          if (arrObjektid.length > 0) { // Koll om det finns några delägare registrerade
+            Promise.all([axios({
               method: 'POST',
-              url: encodeURI(configOptions.url_taxation + '/' + '?includeData=total'),
+              url: encodeURI(configOptions.url_owner + '/beror?includeData=agareAktuella'),
               headers: {
-                'Authorization': 'Bearer ' + tokenTaxation,
+                'Authorization': 'Bearer ' + tokenOwner,
                 'content-type': 'application/json',
                 'scope': `${configOptions.scope}`
                 },
-              data: { "taxeringsenhetsnummer": arrTaxationId.flat() }
-            })]).then(([reqOwner,reqTaxation]) => {
-              if (reqOwner.data.features.length > 0) {
-                reqOwner.data.features.forEach(owner => {
-                  const ownershipArr = [];
-                  if ('agande' in owner.properties) {
-                    owner.properties.agande.forEach(lagfart => {
-                      let ownernName = '';
-                      if ('fornamn' in lagfart.agare) {
-                        ownernName = lagfart.agare.fornamn + ' ';
-                      }
-                      if ('efternamn' in lagfart.agare) {
-                        ownernName = ownernName + lagfart.agare.efternamn;
-                      }
-                      if ('organisationsnamn' in lagfart.agare) {
-                        ownernName = lagfart.agare.organisationsnamn;
-                      }
-                      ownershipArr.push({
-                        idnumber: lagfart.agare.idnummer,
-                        name: ownernName
-                      });
-                    });
-                  }
-                  arrDelagare.push({
-                    designation: owner.properties.fastighetsreferens.beteckning,
-                    objectidentifier: owner.properties.fastighetsreferens.objektidentitet,
-                    ownership: ownershipArr
-                  });
-                });
-              }
-              let taxedOwnerObj = {};
-              if (reqTaxation.data.features.length > 0) {
-                reqTaxation.data.features.forEach(taxation => {
-                  taxation.properties.skvFastighet.forEach(skvFastighet => {
-                    const taxedOwnerArr = [];
-                    if ('taxeradAgare' in skvFastighet) {
-                      skvFastighet.taxeradAgare.forEach(taxOwner => {
+              data: arrObjektid
+              }),axios({
+                method: 'POST',
+                url: encodeURI(configOptions.url_taxation + '/' + '?includeData=total'),
+                headers: {
+                  'Authorization': 'Bearer ' + tokenTaxation,
+                  'content-type': 'application/json',
+                  'scope': `${configOptions.scope}`
+                  },
+                data: { "taxeringsenhetsnummer": arrTaxationId.flat() }
+              })]).then(([reqOwner,reqTaxation]) => {
+                if (reqOwner.data.features.length > 0) {
+                  reqOwner.data.features.forEach(owner => {
+                    const ownershipArr = [];
+                    if ('agande' in owner.properties) {
+                      owner.properties.agande.forEach(lagfart => {
                         let ownernName = '';
-                        if ('person' in taxOwner) {
-                          if ('fornamn' in taxOwner.person) {
-                            ownernName = taxOwner.person.fornamn + ' ';
-                          }
-                          if ('efternamn' in taxOwner.person) {
-                            ownernName = ownernName + taxOwner.person.efternamn;
-                          }
+                        if ('fornamn' in lagfart.agare) {
+                          ownernName = lagfart.agare.fornamn + ' ';
                         }
-                        if ('organisation' in taxOwner) {
-                          ownernName = taxOwner.organisation.organisationsnamn;
+                        if ('efternamn' in lagfart.agare) {
+                          ownernName = ownernName + lagfart.agare.efternamn;
                         }
-                        taxedOwnerArr.push({
-                          idnumber: taxOwner.idNummer,
+                        if ('organisationsnamn' in lagfart.agare) {
+                          ownernName = lagfart.agare.organisationsnamn;
+                        }
+                        ownershipArr.push({
+                          idnumber: lagfart.agare.idnummer,
                           name: ownernName
                         });
                       });
                     }
-                    taxedOwnerObj[skvFastighet.taxeradRegisterenhet.registerenhetsreferens.objektidentitet] = taxedOwnerArr;
+                    arrDelagare.push({
+                      designation: owner.properties.fastighetsreferens.beteckning,
+                      objectidentifier: owner.properties.fastighetsreferens.objektidentitet,
+                      ownership: ownershipArr
+                    });
                   });
-                });
-              }
-              responseObj.partOwners = arrDelagare;
-              Object.keys(taxedOwnerObj).forEach(refObject => {
-                const partOwner = responseObj.partOwners.find(owner => owner.objectidentifier === refObject);
-                if (partOwner) {
-                    partOwner.taxedOwners = taxedOwnerObj[refObject];
+                  responseObj.partOwners = arrDelagare;
+                  responseObj.partOwnersOther = arrOtherDelagare;
+                  const partOwnerByObjId = new Map(
+                    responseObj.partOwners.map(p => [p.objectidentifier, p])
+                  );
+
+                  if (reqTaxation.data.features.length > 0) {
+                    reqTaxation.data.features.forEach(taxation => {
+                      taxation.properties.skvFastighet.forEach(skvFastighet => {
+                        const lmObjId =
+                          skvFastighet?.taxeradRegisterenhet?.registerenhetsreferens?.objektidentitet;
+
+                        // matcha mot delägarfastigheterna
+                        const partOwner = lmObjId ? partOwnerByObjId.get(lmObjId) : null;
+                        if (!partOwner) return;
+
+                        if (!('taxeradAgare' in skvFastighet)) return;
+
+                        const taxedOwnerArr = skvFastighet.taxeradAgare.map(taxOwner => {
+                          let ownerName = '';
+                          let ownerType = '';
+
+                          if (taxOwner?.person) {
+                            ownerName = `${taxOwner.person.fornamn ?? ''} ${taxOwner.person.efternamn ?? ''}`.trim();
+                            ownerType = 'person';
+                          } else if (taxOwner?.organisation) {
+                            ownerName = taxOwner.organisation.organisationsnamn ?? '';
+                            ownerType = 'organisation';
+                          }
+
+                          return {
+                            idnumber: taxOwner.idNummer,
+                            name: ownerName,
+                            type: ownerType,
+                            estateType: skvFastighet.typAvFastighet,
+                            taxedUnitId: skvFastighet.id
+                          };
+                        });
+
+                        partOwner.taxedOwners ??= {};
+                        partOwner.taxedOwners[skvFastighet.id] = taxedOwnerArr;
+                      });
+                    });
+                  }
+                }
+                if (type === 'html') {
+                  res.render('lmEstateOwnersSamfallighet', responseObj);
+                } else {
+                  res.status(200).json(responseObj);
                 }
               });
-              if (type === 'html') {
-                res.render('lmEstateOwnersSamfallighet', responseObj);
-              } else {
-                res.status(200).json(responseObj);
-              }
-            });
+          } else {
+            res.status(200).json({});
+          }
         } else {
           var arrTaxationId = await getTaxation(configOptions, tokenTaxation, objectidentifier);
           Promise.all([axios({
@@ -290,42 +308,48 @@ async function doGet(req, res, objectidentifier) {
                   });
                 });
               }
-
               const taxationEstatesArr = [];
-              if ('taxeringsenhetsnummer' in (reqTaxation.data.features?.[0]?.properties ?? {})) {
-                if ('skvFastighet' in reqTaxation.data.features[0].properties) {
-                  reqTaxation.data.features[0].properties.skvFastighet.forEach(estate => {
-                    estate.taxeradAgare.forEach(taxedowner => {
-                      let taxedOwnernName = '';
-                      let ownernType = '';
-                      if ('person' in taxedowner) {
-                        if ('fornamn' in taxedowner.person) {
-                          taxedOwnernName = taxedowner.person.fornamn + ' ';
-                        }
-                        if ('efternamn' in taxedowner.person) {
-                          taxedOwnernName = taxedOwnernName + taxedowner.person.efternamn;
-                        }
-                        ownernType = 'person';
+              let taxedOwnerObj = {};
+              if (reqTaxation.data.features.length > 0) {
+                reqTaxation.data.features.forEach(taxation => {
+                  taxation.properties.skvFastighet.forEach(skvFastighet => {
+                    const taxedOwnerArr = [];
+                    // Check to see if this is the same estate that we searched for and not a estate that is co-taxed with this.
+                    if (skvFastighet.taxeradRegisterenhet?.registerenhetsreferens?.objektidentitet === objectidentifier) {
+                      if ('taxeradAgare' in skvFastighet) {
+                        skvFastighet.taxeradAgare.forEach(taxOwner => {
+                          let ownerName = '';
+                          let ownerType = '';
+                          if ('person' in taxOwner) {
+                            if ('fornamn' in taxOwner.person) {
+                              ownerName = taxOwner.person.fornamn + ' ';
+                            }
+                            if ('efternamn' in taxOwner.person) {
+                              ownerName = ownerName + taxOwner.person.efternamn;
+                            }
+                            ownerType = 'person';
+                          }
+                          if ('organisation' in taxOwner) {
+                            if ('organisationsnamn' in taxOwner.organisation) {
+                              ownerName = taxOwner.organisation.organisationsnamn;
+                            }
+                            ownerType = 'organisation';
+                          }
+                          taxedOwnerArr.push({
+                            idnumber: taxOwner.idNummer,
+                            name: ownerName,
+                            type: ownerType,
+                            estateType: skvFastighet.typAvFastighet
+                          });
+                        });
+                        taxedOwnerObj[skvFastighet.id] = taxedOwnerArr;
                       }
-                      if ('organisation' in taxedowner) {
-                        if ('organisationsnamn' in taxedowner.organisation) {
-                          taxedOwnernName = taxedowner.organisation.organisationsnamn;
-                        }
-                        ownernType = 'organisation';
-                      }
-                      if (!taxationEstatesArr.some(item => item.idnumber === taxedowner.idNummer)) {
-                        taxationEstatesArr.push({ 
-                          idnumber: taxedowner.idNummer, 
-                          name: taxedOwnernName,
-                          type: ownernType
-                        });                      
-                      }
-                    });
+                    }
                   });
-                }
+                });
               }
               responseObj.ownership = ownershipArr;
-              responseObj.taxedOwners = taxationEstatesArr;
+              responseObj.taxedOwners = taxedOwnerObj;
               if (type === 'html') {
                 res.render('lmEstateOwners', responseObj);
               } else {
