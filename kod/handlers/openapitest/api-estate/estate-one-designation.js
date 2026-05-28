@@ -15,6 +15,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
   configOptions.type = 'address';
   var tokenAdress = await simpleStorage.getToken(configOptions);
   const registerenhetIdArr = [];
+  const gemensamhetsanlaggningIdArr = [];
   const arrayAllIds = [];
   const arrayAddresses = [];
   let errorBlock = 'initial';
@@ -41,34 +42,39 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
 
     if (registerResponse.data.length > 0) {
       registerResponse.data.forEach(element => {
-        arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet });
         if (typeof element.registerenhet !== 'undefined') {
+          arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.registerenhet, communityFacility: false });
           registerenhetIdArr.push(element.registerenhet);
+        }
+        if (typeof element.gemensamhetsanlaggning !== 'undefined') {
+          arrayAllIds.push({ designation: element.beteckning, objectidentifier: element.gemensamhetsanlaggning, communityFacility: true });
+          gemensamhetsanlaggningIdArr.push(element.gemensamhetsanlaggning);
         }
       });
 
-      const postResponse = await axios({
-        method: 'POST',
-        url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
-        headers: {
-          'Authorization': 'Bearer ' + tokenAdress,
-          'content-type': 'application/json',
-          'scope': `${configOptions.scope}`
-        },
-        data: registerenhetIdArr
-      });
-      errorBlock = 'postResponse';
-
-      postResponse.data.features.forEach(element => {
-        const addressObj = concatAddress(element);
-        arrayAddresses.push({
-          address: addressObj.adress,
-          designation: addressObj.registerenhetsreferensBeteckning,
-          objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
-          districtname: addressObj.distriktsnamn,
-          districtcode: addressObj.distriktskod
+      if (registerenhetIdArr.length > 0) {
+        const postResponse = await axios({
+          method: 'POST',
+          url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
+          headers: {
+            'Authorization': 'Bearer ' + tokenAdress,
+            'content-type': 'application/json'
+          },
+          data: registerenhetIdArr
         });
-      });
+        errorBlock = 'postResponse';
+
+        postResponse.data.features.forEach(element => {
+          const addressObj = concatAddress(element);
+          arrayAddresses.push({
+            address: addressObj.adress,
+            designation: addressObj.registerenhetsreferensBeteckning,
+            objectidentifier: element.properties.registerenhetsreferens.objektidentitet,
+            districtname: addressObj.distriktsnamn,
+            districtcode: addressObj.distriktskod
+          });
+        });
+      }
     } else {
       continueProcessing = false;
     }
@@ -119,8 +125,14 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
     }
   } catch (error) {
     res.status(500).send({ error: error.message, block: errorBlock });
+  } finally {
+    if (res.headersSent) {
+      console.log('Headers sent!');
+    } else {
+      res.status(200).send(arrayAllIds);
+    }
   }
-  res.status(200).send(arrayAllIds);
+
 }
 
 /*
