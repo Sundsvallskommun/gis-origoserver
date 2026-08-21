@@ -85,7 +85,7 @@ module.exports = {
           const uttagsdatum = fs.readFileSync("uttagsdatum.json");
           res.status(200).json(JSON.parse(uttagsdatum));
         } else {
-          res.status(200).json([{"Uttagsdatum":"2023-01-01"},{"Uttagsdatum":"2022-01-01"},{"Uttagsdatum":"2021-01-01"},{"Uttagsdatum":"2020-01-01"},{"Uttagsdatum":"2019-01-01"},{"Uttagsdatum":"2018-01-01"},{"Uttagsdatum":"2017-01-01"},{"Uttagsdatum":"2016-01-01"},{"Uttagsdatum":"2014-01-01"}]);
+          res.status(200).json([{"Uttagsdatum":"2026-01-01"},{"Uttagsdatum":"2025-01-01"},{"Uttagsdatum":"2024-01-01"},{"Uttagsdatum":"2023-01-01"},{"Uttagsdatum":"2022-01-03"},{"Uttagsdatum":"2021-01-01"},{"Uttagsdatum":"2020-01-01"},{"Uttagsdatum":"2019-01-01"},{"Uttagsdatum":"2018-01-01"},{"Uttagsdatum":"2017-01-01"},{"Uttagsdatum":"2016-01-01"},{"Uttagsdatum":"2014-01-01"}]);
         }
       } catch(err) {
         console.error(err)
