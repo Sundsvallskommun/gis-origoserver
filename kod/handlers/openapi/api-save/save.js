@@ -2,7 +2,7 @@ const conf = require('../../../conf/config');
 //const url = require('url');
 const nodemailer = require('nodemailer');
 
-function sendReport(req, res, name, report, maplink) {
+function sendReport(req, res, name, email, report, maplink) {
     const configOptions = Object.assign({}, conf['apiSave']);
     let transporter = nodemailer.createTransport({
         host: configOptions.smtp_host,
@@ -13,8 +13,8 @@ function sendReport(req, res, name, report, maplink) {
         from: configOptions.mail_from,
         to: configOptions.mail_to,
         subject: configOptions.msg_subject,
-        text: `Namn: ${name}\r\nProblem: ${report}\r\nKartlänk: ${maplink}`,
-        html: `<p>Namn: ${name}</p><p>Problem: ${report}</p><p>Kartlänk: <a href="${maplink}">${maplink}</a></p>`
+        text: `Namn: ${name}\r\nEmail: ${email}\r\nProblem: ${report}\r\nKartlänk: ${maplink}`,
+        html: `<p>Namn: ${name}</p><p>Email: ${email}</p><p>Problem: ${report}</p><p>Kartlänk: <a href="${maplink}">${maplink}</a></p>`
     };
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
@@ -30,6 +30,7 @@ module.exports = {
     const data = req.body;
     console.log(data);
     let name = '';
+    let email = '';
     let report = '';
     let maplink = '';
     if ('name' in data) {
@@ -37,6 +38,12 @@ module.exports = {
     } else {
         next(new Error(`Missing required parameter name`));
         res.status(400).json({error: 'Missing required parameter name'});
+    }
+    if ('email' in data) {
+      email = data.email;
+    } else {
+        next(new Error(`Missing required parameter email`));
+        res.status(400).json({error: 'Missing required parameter email'});
     }
     if ('report' in data) {
       report = data.report;
@@ -47,7 +54,7 @@ module.exports = {
     if ('maplink' in data) {
       maplink = data.maplink;
     }
-    sendReport(req, res, name, report, maplink);
+    sendReport(req, res, name, email, report, maplink);
     // res.status(200).json({detaljplan: false});
   },
 };
