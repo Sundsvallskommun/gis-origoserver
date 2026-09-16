@@ -7,6 +7,7 @@ const url = require('url');
 
 var objectIds;
 var fnrObjektidentitet;
+var fnrObjektidentitetGA;
 var username;
 var password;
 var srid;
@@ -21,6 +22,7 @@ var proxyUrl = 'lmsearchestate';
 var configOptions;
 objectIds = [];
 fnrObjektidentitet = '';
+fnrObjektidentitetGA = '';
 
 // Do the request in proper order
 const lmSearchEstate = async (req, res) => {
@@ -135,6 +137,9 @@ const lmGetEstateFromPoint = async (req, res) => {
         if (fnrObjektidentitet !== '') {
           req.url = req.url + '&fnr=' + fnrObjektidentitet;
           lmGetEstate(req, res, type);
+        } else if (fnrObjektidentitetGA !== '') {
+          req.url = req.url + '&fnr=' + fnrObjektidentitetGA;
+          lmGetEstate(req, res, type);
         } else {
           res.send({error: 'Hittar ingen fastighet'});
         }
@@ -146,6 +151,7 @@ const lmGetEstateFromPoint = async (req, res) => {
     res.send({});
   }
   fnrObjektidentitet = '';
+  fnrObjektidentitetGA = '';
 }
 
 // Export the module
@@ -205,7 +211,6 @@ async function doSearchAsyncCall(municipalityArray, searchValue) {
           'scope': `${scope}`
         }
     }
-
     promiseArray.push(rp.get(options)
       .then(function(result) {
         var parameters = JSON.parse(result);
@@ -370,6 +375,7 @@ function concatResult(features, municipalityArray) {
 function doGetFromPointWait(req, res, options) {
   rp(options)
   .then(function (parsedBody) {
+    console.log('doGetFromPointWait result: ' + JSON.stringify(parsedBody));
     res.send(concatEstateNameResult(parsedBody));
   })
   .catch(function (err) {
@@ -391,7 +397,6 @@ async function doGetFromPointAsyncCall(req, res, configOptions, easting, northin
       },
       json: true // Automatically parses the JSON string in the response
   }
-
   await doGetFromPointWait(req, res, options);
 }
 
@@ -457,6 +462,7 @@ async function doGetEstateNumberAsyncCall(configOptions, easting, northing) {
     .catch(function (err) {
         // If fail return empty array
         fnrObjektidentitet = '';
+        fnrObjektidentitetGA = '';
     })
     .finally(function () {
         // The result has been handled in concatEstateNumberResult()
@@ -471,7 +477,7 @@ function concatEstateNumberResult(feature) {
       if ('registerenhetsreferens' in element.properties) {
         fnrObjektidentitet = element.properties.registerenhetsreferens.objektidentitet;
       } else if ('gemensamhetsanlaggningsreferens' in element.properties) {
-        fnrObjektidentitet = element.properties.gemensamhetsanlaggningsreferens.objektidentitet;
+        fnrObjektidentitetGA = element.properties.gemensamhetsanlaggningsreferens.objektidentitet;
       }
     })
   }
