@@ -4,6 +4,7 @@ var request = require('request');
 var rp = require('request-promise');
 var Bluebird = require('bluebird');
 const url = require('url');
+const { compareRelevance, compareNamesNaturally } = require('../utils/compare');
 
 var objectIds;
 var fnrObjektidentitet;
@@ -248,7 +249,7 @@ function getEstateWait(options, res, municipalityArray) {
   rp(options)
   .then(function (parsedBody) {
     // Send the resulting object as json and end response
-    res.send(concatResult(parsedBody.features, municipalityArray));
+    res.send(concatResult(parsedBody.features, municipalityArray, options.searchString));
   })
   .catch(function (err) {
     console.log(err);
@@ -291,7 +292,7 @@ function makeRequest(req, res, options) {
   })
 }
 
-function concatResult(features, municipalityArray) {
+function concatResult(features, municipalityArray, searchString) {
   const result = [];
 
   features.forEach((feature) => {
@@ -368,6 +369,8 @@ function concatResult(features, municipalityArray) {
       }
     }
   })
+
+  result.sort((a, b) => compareRelevance(a.properties.name, b.properties.name, searchString) || compareNamesNaturally(a.properties.name, b.properties.name));
 
   return result;
 }
