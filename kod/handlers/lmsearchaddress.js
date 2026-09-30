@@ -2,6 +2,7 @@ var conf = require('../conf/config');
 var request = require('request');
 var rp = require('request-promise');
 const url = require('url');
+const { compareRelevance, compareNamesNaturally } = require('../utils/compare');
 
 var objectIds;
 var srid;
@@ -246,7 +247,7 @@ function getAddressWait(options, res) {
   rp(options)
   .then(function (parsedBody) {
     // Send the resulting object as json and end response
-    res.send(concatResult(parsedBody.features));
+    res.send(concatResult(parsedBody.features, options.searchString));
   })
   .catch(function (err) {
     console.log(err);
@@ -328,7 +329,7 @@ async function getAddressPointAsyncCall(northing, easting, req, res) {
   await getAddressPointWait(options, res);
 }
 
-function concatResult(features) {
+function concatResult(features, searchString) {
   const result = [];
 
   features.forEach((feature) => {
@@ -360,6 +361,7 @@ function concatResult(features) {
       result.push([objektidentitet_1, faststalltNamn + ' ' + adressplatsnummer + bokstavstillagg + ', ' + postort, koordinater[0], koordinater[1], objektidentitet_2]);      
     }
   })
+  result.sort((a, b) => compareRelevance(a[1], b[1], searchString) || compareNamesNaturally(a[1], b[1]));
 
   return result;
 }
