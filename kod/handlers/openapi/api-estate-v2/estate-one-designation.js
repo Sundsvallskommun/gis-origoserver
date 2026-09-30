@@ -28,6 +28,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
 
   // Hämta en fastighet på beteckning och därefter även sök efter adresser på denna fastighet.
   try {
+    errorBlock = 'registerResponse';
     const registerResponse = await axios({
       method: 'GET',
       url: encodeURI(configOptions.url_register + '/beteckning/referens?beteckning=' + designation + '&status=' + statusDesignation + '&maxHits=' + maxHits),
@@ -37,7 +38,6 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         'scope': `${configOptions.scope}`
       }
     });
-    errorBlock = 'registerResponse';
 
     if (registerResponse.data.length > 0) {
       registerResponse.data.forEach(element => {
@@ -47,6 +47,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         }
       });
 
+      errorBlock = 'postResponse';
       const postResponse = await axios({
         method: 'POST',
         url: encodeURI(configOptions.url_address + '/registerenhet?includeData=total'),
@@ -57,7 +58,6 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
         },
         data: registerenhetIdArr
       });
-      errorBlock = 'postResponse';
 
       postResponse.data.features.forEach(element => {
         const addressObj = concatAddress(element);
@@ -93,6 +93,7 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
       });      
     }
 
+    errorBlock = 'districtPromises';
     if (continueProcessing) {
       // Fyll på med distrikt om det saknas, d.v.s. fastighet som saknar adress.
       const districtPromises = arrayAllIds.map(async obj => {
@@ -104,23 +105,22 @@ async function processRequest(req, res, designation, statusDesignation, maxHits)
               'content-type': 'application/json'
             }
           });
-          if (!districtResponse.data.districtname) {
+          if (districtResponse.data.districtnamn) {
             obj.address = '';
             obj.districtname = districtResponse.data.distriktsnamn;
             obj.districtcode = districtResponse.data.distriktskod;
           }
       }
       });
-      errorBlock = 'districtPromises';
 
       await Promise.all(districtPromises);
       // Sort the array alphabetically on address
       arrayAllIds.sort((a, b) => (a.address > b.address) ? 1 : ((b.address > a.address) ? -1 : 0));
+      res.status(200).send(arrayAllIds);
     }
   } catch (error) {
     res.status(500).send({ error: error.message, block: errorBlock });
   }
-  res.status(200).send(arrayAllIds);
 }
 
 /*
