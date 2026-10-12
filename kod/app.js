@@ -183,15 +183,13 @@ if (conf['lmapiproxy']) {
 }
 app.use('/origoserver/auth/saml', authSamlRouter);
 // Sundsvall special felhanterare
-let errorSent = false;
 app.use((err, req, res, next) => {
-  if ('status' in err) {
-    errorSent = true;
+  if (err !== null && typeof err === 'object' && 'status' in err) {
     res.status(err.status).json({ error: err.errors }); // Returnera fel i JSON-format
+  } else {
+    next(err);
   }
 });
-if (!errorSent) {
-  app.use(errors);
-}
+app.use(errors);
 
 module.exports = app;
