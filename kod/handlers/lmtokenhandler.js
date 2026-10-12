@@ -61,8 +61,9 @@ const getToken = async function getToken(proxyOptions) {
       tokens[id] = tokenObject;
       return tokenObject;
 	} else if (!tokenObject.tokenExpires || Math.floor(Date.now() / 1000) > tokenObject.tokenExpires) {
-      if (tokenObject.tokenExpires && Math.floor(Date.now() / 1000) > tokenObject.tokenExpires) {
-        await revokeToken(options);
+      if (options.url_revoke && tokenObject.tokenExpires && Math.floor(Date.now() / 1000) > tokenObject.tokenExpires) {
+        // A failed revoke of an expired token should not stop us from getting a new one
+        await revokeToken(options).catch(() => {});
       }
       tokenObject = await createToken(options);
       tokens[id] = tokenObject;
