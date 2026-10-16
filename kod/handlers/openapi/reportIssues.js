@@ -33,27 +33,38 @@ function parseId(req, res) {
   return id;
 }
 
-// Kör en UPDATE mot ett ärende och svarar med den uppdaterade raden
-async function updateReport(res, id, setClause, values) {
+// Kör en UPDATE mot ett ärende och svarar med den uppdaterade raden.
+// Den inloggade användaren (req.user, satt av reportIssuesAuth) sätts i transaktionsvariabeln
+// report_issues.user, som triggern på tabellen skriver till modifierad_av (se sql/report-issues).
+async function updateReport(req, res, id, setClause, values) {
   const sql = `
     UPDATE intern."LANT_report_issues"
     SET ${setClause}
     WHERE id = $1
     RETURNING ${COLUMNS}`;
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(sql, [id, ...values]);
+    await client.query('BEGIN');
+    if (req.user && req.user.username) {
+      await client.query("SELECT set_config('report_issues.user', $1, true)", [req.user.username]);
+    }
+    const result = await client.query(sql, [id, ...values]);
+    await client.query('COMMIT');
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Ärendet finns inte' });
     }
     res.status(200).json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Error executing query:', err);
     // 23514 = check_violation
     if (err.code === '23514') {
       return res.status(400).json({ error: 'Ogiltiga uppgifter', constraint: err.constraint });
     }
     res.status(500).json({ error: 'Database error' });
+  } finally {
+    client.release();
   }
 }
 

@@ -14,7 +14,7 @@ module.exports = {
     }
 
     // null eller tom sträng tar bort kategorin
-    await updateReport(res, id, 'kategori = $2', [orNull(category)]);
+    await updateReport(req, res, id, 'kategori = $2', [orNull(category)]);
   },
 };
 

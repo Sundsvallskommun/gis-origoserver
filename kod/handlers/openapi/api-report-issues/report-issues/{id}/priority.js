@@ -10,7 +10,7 @@ module.exports = {
       return res.status(400).json({ error: `Ogiltig prioritet, tillåtna värden: ${PRIORITIES.join(', ')}` });
     }
 
-    await updateReport(res, id, 'priority = $2', [priority]);
+    await updateReport(req, res, id, 'priority = $2', [priority]);
   },
 };
 
