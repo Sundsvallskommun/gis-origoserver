@@ -1,67 +1,7 @@
 const conf = require('../../../../conf/config');
-const fs = require('fs');
-const path = require('path');
-const ActiveDirectory = require('activedirectory2');
+const { getAssignees, cachedAssignees } = require('../../reportIssuesAd');
 
 const adConf = conf['reportIssues'];
-const CACHE_MS = (adConf.ad_cache_minutes || 15) * 60 * 1000;
-
-// userAccountControl-flagga för inaktiverat konto
-const ACCOUNTDISABLE = 0x2;
-
-let cache = { at: 0, users: null };
-
-// AD-servern har certifikat från kommunens interna CA, som Node inte litar på som standard.
-// Relativ sökväg räknas från serverns rotkatalog. Läses vid första anropet så att en saknad
-// fil bara slår ut den här endpointen och inte hela servern.
-let tlsOptions;
-function getTlsOptions() {
-  if (!adConf.ad_ca_file) return undefined;
-  if (!tlsOptions) {
-    const caPath = path.resolve(__dirname, '../../../..', adConf.ad_ca_file);
-    tlsOptions = { ca: fs.readFileSync(caPath) };
-  }
-  return tlsOptions;
-}
-
-function fetchGroupMembers() {
-  const ad = new ActiveDirectory({
-    url: adConf.ad_url,
-    baseDN: adConf.ad_base_dn,
-    username: adConf.ad_username,
-    password: adConf.ad_password,
-    tlsOptions: getTlsOptions(),
-    attributes: {
-      user: ['sAMAccountName', 'displayName', 'givenName', 'sn', 'mail', 'userAccountControl'],
-    },
-  });
-
-  return new Promise((resolve, reject) => {
-    // getUsersForGroup tar även med medlemmar i nästlade grupper
-    ad.getUsersForGroup(adConf.ad_group, (err, users) => {
-      if (err) return reject(err);
-      if (!users) return reject(new Error(`AD-gruppen ${adConf.ad_group} hittades inte`));
-      resolve(users);
-    });
-  });
-}
-
-function toAssignee(user) {
-  const name = user.displayName || [user.givenName, user.sn].filter(Boolean).join(' ') || user.sAMAccountName;
-  return { username: user.sAMAccountName, name, email: user.mail || null };
-}
-
-async function getAssignees() {
-  if (cache.users && Date.now() - cache.at < CACHE_MS) return cache.users;
-
-  const users = (await fetchGroupMembers())
-    .filter((user) => user.sAMAccountName && !(Number(user.userAccountControl) & ACCOUNTDISABLE))
-    .map(toAssignee)
-    .sort((a, b) => a.name.localeCompare(b.name, 'sv'));
-
-  cache = { at: Date.now(), users };
-  return users;
-}
 
 module.exports = {
   get: async function (req, res) {
@@ -73,8 +13,8 @@ module.exports = {
     } catch (err) {
       console.error('Error fetching assignees from AD:', err.message || err);
       // Hellre en något gammal lista än ingen alls om AD inte svarar
-      if (cache.users) {
-        return res.status(200).json({ group: adConf.ad_group, items: cache.users, stale: true });
+      if (cachedAssignees()) {
+        return res.status(200).json({ group: adConf.ad_group, items: cachedAssignees(), stale: true });
       }
       res.status(502).json({ error: 'Kunde inte hämta handläggare från AD' });
     }

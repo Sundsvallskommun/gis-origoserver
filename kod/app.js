@@ -86,6 +86,10 @@ if (conf['cors']) {
   app.use(cors(corsOptions));
 }
 
+if (conf['reportIssues']) {
+  app.use('/origoserver/api/v1/report-issues', require('./handlers/openapi/reportIssuesAuth'));
+}
+
 openapi.initialize({
   apiDoc: require('./handlers/openapi/api-doc.js'),
   app: app,
