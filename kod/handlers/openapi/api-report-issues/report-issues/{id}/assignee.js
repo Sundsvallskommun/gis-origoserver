@@ -14,7 +14,7 @@ module.exports = {
     }
 
     // tilldelad_vid uppdateras bara när handläggaren byts, och nollas när tilldelningen tas bort
-    await updateReport(res, id, `
+    await updateReport(req, res, id, `
       tilldelad_till = $2::text,
       tilldelad_vid = CASE
         WHEN $2::text IS NULL THEN NULL

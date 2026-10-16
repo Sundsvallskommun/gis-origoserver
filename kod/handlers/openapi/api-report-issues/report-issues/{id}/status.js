@@ -11,7 +11,7 @@ module.exports = {
     }
 
     // stangd_vid sätts när ärendet stängs och nollas när det öppnas igen
-    await updateReport(res, id, `
+    await updateReport(req, res, id, `
       status = $2,
       stangd_vid = CASE WHEN $2 = ANY($3::text[]) THEN COALESCE(stangd_vid, now()) ELSE NULL END`,
       [status, CLOSED_STATUSES]);

@@ -27,7 +27,7 @@ module.exports = async function requireCaseOfficer(req, res, next) {
     return res.status(401).set('WWW-Authenticate', 'Bearer').json({ error: 'Inloggning krävs' });
   }
 
-  const username = String(userinfo[conf.auth.display_name] || '').toLowerCase();
+  const username = String(userinfo[conf.auth.display_name] || '');
   let officers;
   try {
     officers = await getAssignees();
@@ -39,7 +39,7 @@ module.exports = async function requireCaseOfficer(req, res, next) {
       return res.status(503).json({ error: 'Kunde inte kontrollera behörighet' });
     }
   }
-  if (!username || !officers.some((officer) => officer.username.toLowerCase() === username)) {
+  if (!username || !officers.some((officer) => officer.username.toLowerCase() === username.toLowerCase())) {
     return res.status(403).json({ error: 'Du saknar behörighet till felrapporterna' });
   }
 
