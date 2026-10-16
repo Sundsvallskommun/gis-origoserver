@@ -1,5 +1,6 @@
 const conf = require('../../../../conf/config');
 const fs = require('fs');
+const path = require('path');
 const ActiveDirectory = require('activedirectory2');
 
 const adConf = conf['reportIssues'];
@@ -10,8 +11,18 @@ const ACCOUNTDISABLE = 0x2;
 
 let cache = { at: 0, users: null };
 
-// AD-servern har certifikat från kommunens interna CA, som Node inte litar på som standard
-const tlsOptions = adConf.ad_ca_file ? { ca: fs.readFileSync(adConf.ad_ca_file) } : undefined;
+// AD-servern har certifikat från kommunens interna CA, som Node inte litar på som standard.
+// Relativ sökväg räknas från serverns rotkatalog. Läses vid första anropet så att en saknad
+// fil bara slår ut den här endpointen och inte hela servern.
+let tlsOptions;
+function getTlsOptions() {
+  if (!adConf.ad_ca_file) return undefined;
+  if (!tlsOptions) {
+    const caPath = path.resolve(__dirname, '../../../..', adConf.ad_ca_file);
+    tlsOptions = { ca: fs.readFileSync(caPath) };
+  }
+  return tlsOptions;
+}
 
 function fetchGroupMembers() {
   const ad = new ActiveDirectory({
@@ -19,7 +30,7 @@ function fetchGroupMembers() {
     baseDN: adConf.ad_base_dn,
     username: adConf.ad_username,
     password: adConf.ad_password,
-    tlsOptions,
+    tlsOptions: getTlsOptions(),
     attributes: {
       user: ['sAMAccountName', 'displayName', 'givenName', 'sn', 'mail', 'userAccountControl'],
     },
