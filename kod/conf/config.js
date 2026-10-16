@@ -77,7 +77,7 @@ module.exports = {
   cors: {
     origin: '*',
     methods: ['GET', 'PUT', 'POST', 'OPTIONS', 'PATCH', 'DELETE'],
-    headers: 'X-Requested-With,content-type',
+    headers: 'X-Requested-With,content-type,Authorization',
     credentials: true,
     optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
   },
