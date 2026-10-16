@@ -4,6 +4,10 @@ const { getAssignees, cachedAssignees } = require('./reportIssuesAd');
 
 const issuesConf = conf['reportIssues'];
 
+// Claim i userinfo som innehåller användarnamnet i AD (sAMAccountName). Inloggningstjänsten
+// skickar det i sub; username_claim i conf.reportIssues kan peka på en annan claim.
+const usernameClaim = issuesConf.username_claim || 'sub';
+
 // Skyddar /report-issues: allt utom PUT /report-issues (inrapportering från kartan) kräver
 // en giltig access-token (Authorization: Bearer …) från en användare i handläggargruppen (ad_group).
 // require_login: false stänger av kontrollen, t.ex. för lokal utveckling.
@@ -27,7 +31,7 @@ module.exports = async function requireCaseOfficer(req, res, next) {
     return res.status(401).set('WWW-Authenticate', 'Bearer').json({ error: 'Inloggning krävs' });
   }
 
-  const username = String(userinfo[conf.auth.display_name] || '');
+  const username = String(userinfo[usernameClaim] || '');
   let officers;
   try {
     officers = await getAssignees();
@@ -40,6 +44,7 @@ module.exports = async function requireCaseOfficer(req, res, next) {
     }
   }
   if (!username || !officers.some((officer) => officer.username.toLowerCase() === username.toLowerCase())) {
+    console.warn(`report-issues: nekad, användaren ${JSON.stringify(username)} (claim ${usernameClaim}) finns inte i ${issuesConf.ad_group}. Claims: ${Object.keys(userinfo).join(', ')}`);
     return res.status(403).json({ error: 'Du saknar behörighet till felrapporterna' });
   }
 
