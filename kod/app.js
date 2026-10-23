@@ -97,7 +97,8 @@ openapi.initialize({
     path.resolve(__dirname, 'handlers/openapi/api-zoning'),
 		path.resolve(__dirname, 'handlers/openapi/api-nyko'),
 		path.resolve(__dirname, 'handlers/openapi/api-precheck'),
-    path.resolve(__dirname, 'handlers/openapi/api-report-issues'),
+    // Handlers för report-issues läser conf.reportIssues när de laddas
+    ...(conf['reportIssues'] ? [path.resolve(__dirname, 'handlers/openapi/api-report-issues')] : []),
   ],
 });
 
