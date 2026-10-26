@@ -143,6 +143,12 @@ Configured services at:
 
       The {query name} specified in the config.
 
+- Matomo dashboard - statistics page for Origo maps tracked with [origo-matomo-plugin](https://gitlab.sundsvall.se/gis/origo-matomo-plugin)
+
+      /origoserver/matomo/
+
+      Serves the dashboard and forwards its requests to the Matomo Reporting API with a shared token, so users don't need their own. Requires login, and only users in the report-issues AD group get access. Only enabled when matomoDashboard is configured.
+
 - Authorization - openid authorization and token refresh
 
       Configure auth in conf/config.js

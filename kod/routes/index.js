@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var conf = require('../conf/config');
 
 //handlers
 var searchAddressEstate = require('../handlers/searchaddressestate');
@@ -83,5 +84,9 @@ router.all('/fbwebbproxy/*splat', fbwebbProxy);
 router.use('/ngp', ngp);
 router.use('/attachment', attachment);
 router.all('/getstuff', getStuff['getStuff']);
+// Handlern läser conf.matomoDashboard när den laddas. Sökvägen måste vara samma som mountName i handlern.
+if (conf['matomoDashboard']) {
+  router.use('/matomo', require('../handlers/matomodashboard'));
+}
 
 module.exports = router;
