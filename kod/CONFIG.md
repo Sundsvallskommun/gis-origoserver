@@ -110,7 +110,7 @@ Acts as a attachment server for files from Nationella geodataplattformen (NGP). 
 
 - MatomoDashboard - serves the statistics page from [origo-matomo-plugin](https://gitlab.sundsvall.se/gis/origo-matomo-plugin) at /origoserver/matomo/
 
-Build the page with `npm run build:dashboard` in origo-matomo-plugin and copy the contents of build/dashboard to the folder given in dir. The server forwards the page's requests to the Matomo Reporting API with the token below, so users don't need a token of their own. Only the API methods the page uses are forwarded. Create a Matomo user with view access only to the maps and use that user's token.
+Build the page with `npm run build:dashboard` in origo-matomo-plugin and copy the contents of build/dashboard to the folder given in dir. The folder is not part of this repository (kod/matomo-dashboard is ignored by git), so it must be copied to the server, or to kod/ before the Docker image is built. dir can also be an absolute path, f.e. a mounted volume. If index.html is missing, the server logs an error at startup and /origoserver/matomo/ answers 404 with a message. The server forwards the page's requests to the Matomo Reporting API with the token below, so users don't need a token of their own. Only the API methods the page uses are forwarded. Create a Matomo user with view access only to the maps and use that user's token.
 
 The statistics require login with OpenID Connect through /origoserver/auth, the same way as report-issues, and only users in the AD group in reportIssues (ad_group) get access. This requires that auth and reportIssues are configured, and that auth.clients has an entry for the page, f.e. `matomoDashboard: 'https://internkarta.example.se/origoserver/matomo/'`.
 

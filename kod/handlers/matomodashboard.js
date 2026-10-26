@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const conf = require('../conf/config');
 const requireAdGroupMember = require('./auth/requireAdGroupMember');
@@ -27,6 +28,11 @@ const timeout = 120000;
 
 // Relativa sökvägar utgår från serverns rotmapp (kod/)
 const dir = path.resolve(__dirname, '..', dashboardConf.dir || 'matomo-dashboard');
+// Den byggda sidan ingår inte i repot och måste kopieras hit, se CONFIG.md
+const installed = fs.existsSync(path.join(dir, 'index.html'));
+if (!installed) {
+  console.error(`matomoDashboard: statistiksidan saknas, ${path.join(dir, 'index.html')} finns inte`);
+}
 const apiUrl = new URL('index.php', dashboardConf.url.endsWith('/') ? dashboardConf.url : `${dashboardConf.url}/`);
 const sites = dashboardConf.sites ? new Set(dashboardConf.sites.map(String)) : null;
 const requireLogin = dashboardConf.require_login !== false;
@@ -114,5 +120,9 @@ router.use(express.static(dir, {
     res.set('Cache-Control', file.includes(`${path.sep}assets${path.sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache');
   }
 }));
+router.get('/', (req, res, next) => {
+  if (installed) return next();
+  return res.status(404).type('text').send('Statistiksidan är inte installerad på servern. Se matomoDashboard i CONFIG.md.');
+});
 
 module.exports = router;
