@@ -128,6 +128,8 @@ The statistics require login with OpenID Connect through /origoserver/auth, the 
 
 		title - the title of the page. Default 'Kartstatistik'.
 
+		maps - optional list of the maps that can be chosen on the page when several maps share a site in Matomo, f.e. [{ title: 'Sundsvall', url: 'https://karta.sundsvall.se/sundsvall' }]. A map includes the pages whose address starts with url. Default the maps found among the page views of the last year.
+
 		require_login - false turns off the login, f.e. for local development. Then anyone who can reach /origoserver/matomo/ can read the statistics. Default true.
 
 		auth_client - the name of the page in auth.clients. Default 'matomoDashboard'.
