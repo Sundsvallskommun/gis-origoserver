@@ -18,7 +18,8 @@ const allowedMethods = new Set([
   'VisitsSummary.get',
   'Events.getCategory',
   'Events.getAction',
-  'Events.getName'
+  'Events.getName',
+  'Actions.getPageUrls'
 ]);
 const allowedParams = ['idSite', 'period', 'date', 'segment', 'secondaryDimension', 'expanded', 'flat', 'filter_limit'];
 
@@ -78,9 +79,12 @@ async function api(req, res) {
 // Sidan får veta att anropen går via servern och behöver då ingen adress till Matomo eller token.
 // auth.url är relativ till sidan, som ligger under /origoserver/matomo/.
 function config(req, res) {
-  const { siteId = null, eventLocale = 'sv-SE', title = 'Kartstatistik' } = dashboardConf;
+  const {
+    siteId = null, eventLocale = 'sv-SE', title = 'Kartstatistik', maps
+  } = dashboardConf;
   res.set('Cache-Control', 'no-cache').json({
     siteId,
+    maps,
     eventLocale,
     title,
     proxy: true,
