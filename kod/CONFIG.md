@@ -107,3 +107,38 @@ Acts as a attachment server for files from Nationella geodataplattformen (NGP). 
     	scope - the scope used to get the token from Lantmäteriet API, f.e. 'am_application_scope default'.
 
     	query - A string with JSON to specify the query on which a detailed plan is searched for and specify where to inject identifier in the query between two $ characters, f.e. '{"feature.typ": {"eq": "detaljplan"}, "detaljplan.beteckning": {"eq": "$planid$"}, "detaljplan.status": {"in": ["laga kraft"]}}'.
+
+- MatomoDashboard - serves the statistics page from [origo-matomo-plugin](https://gitlab.sundsvall.se/gis/origo-matomo-plugin) at /origoserver/matomo/
+
+Build the page with `npm run build:dashboard` in origo-matomo-plugin and copy the contents of build/dashboard to the folder given in dir. The server forwards the page's requests to the Matomo Reporting API with the token below, so users don't need a token of their own. Only the API methods the page uses are forwarded. Create a Matomo user with view access only to the maps and use that user's token.
+
+The statistics require login with OpenID Connect through /origoserver/auth, the same way as report-issues, and only users in the AD group in reportIssues (ad_group) get access. This requires that auth and reportIssues are configured, and that auth.clients has an entry for the page, f.e. `matomoDashboard: 'https://internkarta.example.se/origoserver/matomo/'`.
+
+		url - the url to Matomo, f.e. 'https://matomo.example.se/'.
+
+		token - token_auth for a Matomo user with view access. Preferably set it with an environment variable, f.e. `token: process.env.MATOMO_TOKEN`.
+
+		dir - the folder with the built page, relative to the server root. Default 'matomo-dashboard'.
+
+		sites - optional array of site ids that may be shown, f.e. [5, 7]. Default all sites the token can read.
+
+		siteId - optional site id that is shown first.
+
+		eventLocale - the eventLocale used by origo-matomo-plugin in the maps, 'sv-SE' or 'en-US'. Default 'sv-SE'.
+
+		title - the title of the page. Default 'Kartstatistik'.
+
+		require_login - false turns off the login, f.e. for local development. Then anyone who can reach /origoserver/matomo/ can read the statistics. Default true.
+
+		auth_client - the name of the page in auth.clients. Default 'matomoDashboard'.
+
+	Example:
+
+		matomoDashboard: {
+		  url: 'https://matomo.example.se/',
+		  token: process.env.MATOMO_TOKEN,
+		  dir: 'matomo-dashboard',
+		  sites: [5, 7],
+		  eventLocale: 'sv-SE',
+		  title: 'Kartstatistik'
+		}
