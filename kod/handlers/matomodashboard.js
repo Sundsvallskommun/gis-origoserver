@@ -94,11 +94,17 @@ const login = requireLogin
 
 const router = express.Router();
 
-// Sidan använder relativa sökvägar och måste därför ha ett avslutande snedstreck
+// Sidan använder relativa sökvägar och måste därför ha ett avslutande snedstreck.
+// Omdirigeringen är relativ till sidans sista del i sökvägen (/origoserver/matomo -> matomo/),
+// så den kan aldrig leda till en annan webbplats. Frågan behålls för inloggningens ?code=…&state=….
+const mountName = 'matomo';
 router.get('/', (req, res, next) => {
-  const [pathname, query] = req.originalUrl.split('?');
-  if (pathname.endsWith('/')) return next();
-  return res.redirect(301, `${pathname}/${query ? `?${query}` : ''}`);
+  if (req.originalUrl.split('?')[0].endsWith('/')) return next();
+  const query = new URLSearchParams();
+  Object.entries(req.query).forEach(([key, value]) => {
+    if (typeof value === 'string') query.set(key, value);
+  });
+  return res.redirect(301, `${mountName}/${query.size ? `?${query}` : ''}`);
 });
 router.post('/api/index.php', login, api);
 router.get('/config.json', config);

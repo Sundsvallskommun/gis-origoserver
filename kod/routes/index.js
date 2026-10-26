@@ -84,7 +84,7 @@ router.all('/fbwebbproxy/*splat', fbwebbProxy);
 router.use('/ngp', ngp);
 router.use('/attachment', attachment);
 router.all('/getstuff', getStuff['getStuff']);
-// Handlern läser conf.matomoDashboard när den laddas
+// Handlern läser conf.matomoDashboard när den laddas. Sökvägen måste vara samma som mountName i handlern.
 if (conf['matomoDashboard']) {
   router.use('/matomo', require('../handlers/matomodashboard'));
 }
