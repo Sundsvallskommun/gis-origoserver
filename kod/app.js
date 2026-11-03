@@ -58,7 +58,16 @@ if (conf['session']) {
 }
 
 
-app.use(bodyParser.json())
+// Dialogkarta tolkar själv sina anrop: större dialoger än bodyParsers 100 kB, och bilagor som
+// rå body, även .json-filer som annars skulle tolkas här.
+const DIALOGKARTA_PATH = '/origoserver/api/v1/dialogs';
+// Gemener, eftersom Express routing inte skiljer på stora och små bokstäver.
+const isDialogkarta = (req) => {
+  const p = req.path.toLowerCase();
+  return p === DIALOGKARTA_PATH || p.startsWith(`${DIALOGKARTA_PATH}/`);
+};
+const jsonParser = bodyParser.json();
+app.use((req, res, next) => (conf['dialogkarta'] && isDialogkarta(req) ? next() : jsonParser(req, res, next)));
 
 if (conf['cors']) {
   var configOptions = Object.assign({}, conf['cors']);
@@ -88,6 +97,11 @@ if (conf['cors']) {
 
 if (conf['reportIssues']) {
   app.use('/origoserver/api/v1/report-issues', require('./handlers/openapi/reportIssuesAuth'));
+}
+
+// Medborgardialoger (Dialogkarta-pluginet). Beskrivs av OpenAPI 3.2 på .../dialogs/openapi.json.
+if (conf['dialogkarta']) {
+  app.use(DIALOGKARTA_PATH, require('./handlers/dialogkarta')(conf['dialogkarta']));
 }
 
 openapi.initialize({

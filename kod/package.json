@@ -9,11 +9,14 @@
   "license": "BSD-2-Clause",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test:dialogkarta": "node --test handlers/dialogkarta/test/*.test.js"
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
     "activedirectory2": "^2.2.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "axios": "^1.11.0",
     "bluebird": "^3.7.2",
     "cookie-parser": "~1.4.7",
