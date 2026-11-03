@@ -144,3 +144,43 @@ The statistics require login with OpenID Connect through /origoserver/auth, the 
 		  eventLocale: 'sv-SE',
 		  title: 'Kartstatistik'
 		}
+
+- Dialogkarta - citizen dialogues for the Origo plugin Dialogkarta at /origoserver/api/v1/dialogs
+
+Where the municipality has held citizen dialogues, what they were about and what they resulted in, with attachments such as reports or GeoJSON with the input from a map dialogue. The API is described by an OpenAPI 3.2 document served at /origoserver/api/v1/dialogs/openapi.json; the document also drives the routing and validates every request (handlers/dialogkarta/openapi.js). Reading is open. Changes require login with OpenID Connect through /origoserver/auth, the same way as report-issues, by a user in ad_group. This requires that auth and reportIssues are configured, since the AD account for the group lookup is taken from reportIssues. The map sends the user's access token with the plugin's headers option.
+
+Create the tables with sql/dialogkarta/schema.sql. The SRID in the schema must be the same as srid below and the plugin's dataProjection. The CORS headers must allow X-Filename (used for attachments) if the map is on another origin.
+
+		storage - 'pg' (default) or 'file'. 'file' keeps the dialogs in a JSON file and the attachments as files in data_dir, for local development.
+
+		db_host, db_port, db_database, db_username, db_password - the PostgreSQL/PostGIS database, for storage 'pg'. Preferably set the password with an environment variable.
+
+		db_schema - the schema with the tables. Default 'dialog'.
+
+		srid - the SRID of the geometries. Default 3014.
+
+		data_dir - the folder for storage 'file', relative to the server root. Default 'dialogkarta-data'.
+
+		ad_group - the AD group whose members may change dialogues. Default the ad_group in reportIssues.
+
+		require_login - false turns off the login, f.e. for local development. Then anyone can change the dialogues. Default true.
+
+		max_attachment_mb - the largest attachment in MB. Default 25.
+
+		validate_responses - 'warn' logs responses that don't match the OpenAPI document, 'strict' answers 500 instead. Default false.
+
+	Example:
+
+		dialogkarta: {
+		  storage: 'pg',
+		  db_host: 'db.example.se',
+		  db_port: 5432,
+		  db_database: 'gis',
+		  db_username: 'dialogkarta',
+		  db_password: process.env.DIALOGKARTA_DB_PASSWORD,
+		  db_schema: 'dialog',
+		  srid: 3014,
+		  ad_group: 'Medborgardialog-redaktorer',
+		  max_attachment_mb: 25,
+		  validate_responses: 'warn'
+		}

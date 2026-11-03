@@ -9,7 +9,9 @@ const CACHE_MS = (adConf.ad_cache_minutes || 15) * 60 * 1000;
 // userAccountControl-flagga för inaktiverat konto
 const ACCOUNTDISABLE = 0x2;
 
-let cache = { at: 0, users: null };
+// Per grupp: { at, users }. Standard är gruppen i reportIssues (ad_group); andra delar av
+// servern, t.ex. dialogkarta, kan fråga efter en egen grupp med samma AD-konto.
+const caches = new Map();
 
 // AD-servern har certifikat från kommunens interna CA, som Node inte litar på som standard.
 // Relativ sökväg räknas från serverns rotkatalog. Läses vid första anropet så att en saknad
@@ -24,7 +26,7 @@ function getTlsOptions() {
   return tlsOptions;
 }
 
-function fetchGroupMembers() {
+function fetchGroupMembers(group) {
   const ad = new ActiveDirectory({
     url: adConf.ad_url,
     baseDN: adConf.ad_base_dn,
@@ -38,9 +40,9 @@ function fetchGroupMembers() {
 
   return new Promise((resolve, reject) => {
     // getUsersForGroup tar även med medlemmar i nästlade grupper
-    ad.getUsersForGroup(adConf.ad_group, (err, users) => {
+    ad.getUsersForGroup(group, (err, users) => {
       if (err) return reject(err);
-      if (!users) return reject(new Error(`AD-gruppen ${adConf.ad_group} hittades inte`));
+      if (!users) return reject(new Error(`AD-gruppen ${group} hittades inte`));
       resolve(users);
     });
   });
@@ -51,22 +53,24 @@ function toAssignee(user) {
   return { username: user.sAMAccountName, name, email: user.mail || null };
 }
 
-// Handläggarna i AD-gruppen: [{ username, name, email }], sorterade på namn.
-async function getAssignees() {
-  if (cache.users && Date.now() - cache.at < CACHE_MS) return cache.users;
+// Medlemmarna i AD-gruppen, standard handläggarna i reportIssues: [{ username, name, email }],
+// sorterade på namn.
+async function getAssignees(group = adConf.ad_group) {
+  const cache = caches.get(group);
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.users;
 
-  const users = (await fetchGroupMembers())
+  const users = (await fetchGroupMembers(group))
     .filter((user) => user.sAMAccountName && !(Number(user.userAccountControl) & ACCOUNTDISABLE))
     .map(toAssignee)
     .sort((a, b) => a.name.localeCompare(b.name, 'sv'));
 
-  cache = { at: Date.now(), users };
+  caches.set(group, { at: Date.now(), users });
   return users;
 }
 
-// Senast hämtade lista, även om den är gammal. null om AD aldrig svarat.
-function cachedAssignees() {
-  return cache.users;
+// Senast hämtade lista för gruppen, även om den är gammal. null om AD aldrig svarat.
+function cachedAssignees(group = adConf.ad_group) {
+  return caches.get(group)?.users || null;
 }
 
 module.exports = {

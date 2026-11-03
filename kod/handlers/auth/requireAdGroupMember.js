@@ -2,16 +2,20 @@ const conf = require('../../conf/config');
 const { userFromRequest } = require('./bearer');
 
 // Middleware som kräver en giltig access-token (Authorization: Bearer …) från en användare i
-// AD-gruppen i conf.reportIssues (ad_group). Används av report-issues och statistiksidan för Matomo.
+// en AD-grupp, standard gruppen i conf.reportIssues (ad_group). Används av report-issues,
+// statistiksidan för Matomo och dialogkarta. AD-kontot för uppslagen ställs alltid in i
+// conf.reportIssues.
 // Sätter req.user = { username, userinfo }.
 //
 //   name       - namn i loggarna, t.ex. 'report-issues'
 //   forbidden  - felmeddelandet när användaren inte finns i gruppen
 //   sendError  - skickar ett fel, standard { error: meddelande }
+//   adGroup    - AD-gruppen, standard conf.reportIssues.ad_group
 module.exports = function requireAdGroupMember({
   name,
   forbidden = 'Du saknar behörighet',
   sendError = (res, status, message) => res.status(status).json({ error: message }),
+  adGroup,
 }) {
   const issuesConf = conf['reportIssues'];
 
@@ -28,6 +32,7 @@ module.exports = function requireAdGroupMember({
   // Claim i userinfo som innehåller användarnamnet i AD (sAMAccountName). Inloggningstjänsten
   // skickar det i sub; username_claim i conf.reportIssues kan peka på en annan claim.
   const usernameClaim = issuesConf.username_claim || 'sub';
+  const group = adGroup || issuesConf.ad_group;
 
   return async function requireMember(req, res, next) {
     if (!conf.auth) {
@@ -49,17 +54,17 @@ module.exports = function requireAdGroupMember({
     const username = String(userinfo[usernameClaim] || '');
     let members;
     try {
-      members = await getAssignees();
+      members = await getAssignees(group);
     } catch (err) {
       // Hellre en något gammal lista än att stänga ute alla om AD inte svarar
-      members = cachedAssignees();
+      members = cachedAssignees(group);
       if (!members) {
         console.error(`${name}: kunde inte hämta gruppen från AD:`, err.message || err);
         return sendError(res, 503, 'Kunde inte kontrollera behörighet');
       }
     }
     if (!username || !members.some((member) => member.username.toLowerCase() === username.toLowerCase())) {
-      console.warn(`${name}: nekad, användaren ${JSON.stringify(username)} (claim ${usernameClaim}) finns inte i ${issuesConf.ad_group}. Claims: ${Object.keys(userinfo).join(', ')}`);
+      console.warn(`${name}: nekad, användaren ${JSON.stringify(username)} (claim ${usernameClaim}) finns inte i ${group}. Claims: ${Object.keys(userinfo).join(', ')}`);
       return sendError(res, 403, forbidden);
     }
 
