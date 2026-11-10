@@ -7,7 +7,10 @@ var searchAddressEstate = require('../handlers/searchaddressestate');
 var search = require('../handlers/search');
 var singleSearch = require('../handlers/singlesearch');
 var getInskrivning = require('../handlers/getinskrivning');
-var proxy = require('../handlers/proxy');
+// The proxy is only enabled if conf.proxy exists, since the handler reads conf.proxy when it is loaded.
+if (conf['proxy']) {
+  router.all('/proxy', require('../handlers/proxy'));
+}
 var lmProxy = require('../handlers/lmproxy');
 var lmProxyVer = require('../handlers/lmproxyver');
 var excelCreator = require('../handlers/excelcreator');
@@ -30,8 +33,11 @@ var iotTemp = require('../handlers/iottemp');
 //var ldapProxy = require('../handlers/ldapproxy');
 var befStat = require('../handlers/befstat');
 var cascadeWMS = require('../handlers/cascadewms');
-var auth = require('../handlers/auth');
-var clients = require('../handlers/clients');
+// Login is only enabled if conf.auth exists, since the auth and clients handlers read conf.auth.
+if (conf['auth']) {
+  router.use('/auth', require('../handlers/auth'));
+  router.use('/clients', require('../handlers/clients'));
+}
 var disturbances = require('../handlers/disturbances');
 var getImage = require('../handlers/getimage');
 var fbwebbProxy = require('../handlers/fbwebbproxy');
