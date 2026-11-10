@@ -7,10 +7,7 @@ var searchAddressEstate = require('../handlers/searchaddressestate');
 var search = require('../handlers/search');
 var singleSearch = require('../handlers/singlesearch');
 var getInskrivning = require('../handlers/getinskrivning');
-// The proxy is only enabled if conf.proxy exists, since the handler reads conf.proxy when it is loaded.
-if (conf['proxy']) {
-  router.all('/proxy', require('../handlers/proxy'));
-}
+var proxy = require('../handlers/proxy');
 var lmProxy = require('../handlers/lmproxy');
 var lmProxyVer = require('../handlers/lmproxyver');
 var excelCreator = require('../handlers/excelcreator');
@@ -33,11 +30,8 @@ var iotTemp = require('../handlers/iottemp');
 //var ldapProxy = require('../handlers/ldapproxy');
 var befStat = require('../handlers/befstat');
 var cascadeWMS = require('../handlers/cascadewms');
-// Login is only enabled if conf.auth exists, since the auth and clients handlers read conf.auth.
-if (conf['auth']) {
-  router.use('/auth', require('../handlers/auth'));
-  router.use('/clients', require('../handlers/clients'));
-}
+var auth = require('../handlers/auth');
+var clients = require('../handlers/clients');
 var disturbances = require('../handlers/disturbances');
 var getImage = require('../handlers/getimage');
 var fbwebbProxy = require('../handlers/fbwebbproxy');
@@ -55,7 +49,10 @@ router.all('/addressestatesearch', searchAddressEstate);
 router.all('/search', search);
 router.all('/singlesearch', singleSearch);
 router.all('/estate/inskrivning', getInskrivning);
-router.all('/proxy', proxy);
+// The proxy is only enabled if conf.proxy exists, since the handler reads conf.proxy when it is loaded.
+if (conf['proxy']) {
+  router.all('/proxy', require('../handlers/proxy'));
+}
 router.all('/lmproxy/*splat', lmProxy);
 router.all('/lmproxy-ver/*splat', lmProxyVer);
 router.use('/excelcreator', excelCreator);
@@ -82,8 +79,11 @@ router.all('/iottemp', iotTemp);
 //router.all('/ldapproxy/*', ldapProxy);
 router.all('/befstat', befStat);
 router.all('/cascadewms/*splat', cascadeWMS);
-router.use('/auth', auth);
-router.use('/clients', clients);
+// Login is only enabled if conf.auth exists, since the auth and clients handlers read conf.auth.
+if (conf['auth']) {
+  router.use('/auth', require('../handlers/auth'));
+  router.use('/clients', require('../handlers/clients'));
+}
 router.all('/disturbances', disturbances);
 router.all('/getimage', getImage);
 router.all('/fbwebbproxy/*splat', fbwebbProxy);
