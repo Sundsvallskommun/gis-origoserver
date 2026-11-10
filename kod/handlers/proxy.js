@@ -1,5 +1,4 @@
 var request = require('request');
-var proxyUrl = require('../conf/config').proxy.proxyUrl;
 var proxyRequest = require('../lib/proxyrequest');
 
 module.exports = function proxy(req, res) {
