@@ -46,15 +46,12 @@ const requireWrite = createRequireWrite(configOptions);
 attachmentRouter.get("/:layer/:object/attachments/", listAttachments);
 attachmentRouter.get("/:layer/attachments/", listAllAttachments);
 attachmentRouter.get("/:layer/:object/attachments/:id", fetchDoc);
-if (configOptions.require_login === true) {
-  // A GET can't be protected by the Origin check (an image tag on another site sends the session
-  // cookie without Origin), so deleting everything with GET is turned off when login is required.
-  attachmentRouter.get("/:layer/:object/deleteAttachments/", (req, res) => {
-    res.status(405).set("Allow", "POST").json({ error: "Ta bort bilagor med POST" });
-  });
-} else {
-  attachmentRouter.get("/:layer/:object/deleteAttachments/", deleteAllAttachments);
-}
+// Deleting must never be done with GET: a link or an image tag on another site could then delete
+// attachments. Delete all attachments of an object with POST to deleteAllAttachments instead.
+attachmentRouter.get("/:layer/:object/deleteAttachments/", (req, res) => {
+  res.status(405).set("Allow", "POST").json({ error: "Ta bort bilagor med POST" });
+});
+attachmentRouter.post("/:layer/:object/deleteAllAttachments/", requireWrite, deleteAllAttachments);
 attachmentRouter.post("/:layer/:object/deleteAttachments/", requireWrite, deleteAttachments);
 // requireWrite before the upload, so a file from someone who may not upload isn't read at all.
 attachmentRouter.post("/:layer/:object/addAttachment", requireWrite, uploadFile, function (req, res, next) {

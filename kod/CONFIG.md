@@ -116,7 +116,7 @@ Acts as a attachment server for files from Nationella geodataplattformen (NGP). 
 
     	allowedExtensions - the file extensions (without dot) that may be uploaded. Other files get 415. Default jpg, jpeg, png, gif, webp, heic, bmp, tif, tiff, pdf, txt, csv, rtf, doc, docx, xls, xlsx, ppt, pptx, odt, ods, odp, msg, eml, dwg, dxf, zip.
 
-    	require_login - true to require login for uploading and deleting attachments; reading is always open. Default false, for sites without AD. The user is taken from the session cookie set when the map logs in through /origoserver/auth (the OIDC plugin), so this requires that auth, session and reportIssues are configured (the AD account for the group lookup is taken from reportIssues) and that the map is on the same address as origoserver. Deleting all attachments of an object with GET is turned off when login is required.
+    	require_login - true to require login for uploading and deleting attachments; reading is always open. Default false, for sites without AD. The user is taken from the session cookie set when the map logs in through /origoserver/auth (the OIDC plugin), so this requires that auth, session and reportIssues are configured (the AD account for the group lookup is taken from reportIssues) and that the map is on the same address as origoserver.
 
     	ad_group - the AD group, or a list of groups, whose members may upload and delete. Default the group in reportIssues.
 
