@@ -36,7 +36,6 @@ var disturbances = require('../handlers/disturbances');
 var getImage = require('../handlers/getimage');
 var fbwebbProxy = require('../handlers/fbwebbproxy');
 var ngp = require('../handlers/ngp');
-var attachment = require('../handlers/attachment');
 var lmCommunityAssociation = require('../handlers/lmcommunityassociation');
 var getStuff = require('../handlers/getstuff');
 
@@ -88,7 +87,10 @@ router.all('/disturbances', disturbances);
 router.all('/getimage', getImage);
 router.all('/fbwebbproxy/*splat', fbwebbProxy);
 router.use('/ngp', ngp);
-router.use('/attachment', attachment);
+// Attachments are only enabled if conf.attachment exists, since the handler reads conf.attachment when it is loaded.
+if (conf['attachment']) {
+  router.use('/attachment', require('../handlers/attachment'));
+}
 router.all('/getstuff', getStuff['getStuff']);
 // Handlern läser conf.matomoDashboard när den laddas. Sökvägen måste vara samma som mountName i handlern.
 if (conf['matomoDashboard']) {
