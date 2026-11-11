@@ -13,6 +13,7 @@ const {
   maxFileSize,
 } = require("./attachments");
 const multer = require("multer");
+const createRequireWrite = require("./requireWrite");
 const getUuid = require("uuid-by-string");
 const attachmentRouter = express.Router();
 
@@ -39,12 +40,21 @@ if (conf["attachment"]) {
   configOptions = Object.assign({}, conf["attachment"]);
 }
 
+// Uploading and deleting can require login, see requireWrite.js. Reading is always open.
+const requireWrite = createRequireWrite(configOptions);
+
 attachmentRouter.get("/:layer/:object/attachments/", listAttachments);
 attachmentRouter.get("/:layer/attachments/", listAllAttachments);
 attachmentRouter.get("/:layer/:object/attachments/:id", fetchDoc);
-attachmentRouter.get("/:layer/:object/deleteAttachments/", deleteAllAttachments);
-attachmentRouter.post("/:layer/:object/deleteAttachments/", deleteAttachments);
-attachmentRouter.post("/:layer/:object/addAttachment", uploadFile, function (req, res, next) {
+// Deleting must never be done with GET: a link or an image tag on another site could then delete
+// attachments. Delete all attachments of an object with POST to deleteAllAttachments instead.
+attachmentRouter.get("/:layer/:object/deleteAttachments/", (req, res) => {
+  res.status(405).set("Allow", "POST").json({ error: "Ta bort bilagor med POST" });
+});
+attachmentRouter.post("/:layer/:object/deleteAllAttachments/", requireWrite, deleteAllAttachments);
+attachmentRouter.post("/:layer/:object/deleteAttachments/", requireWrite, deleteAttachments);
+// requireWrite before the upload, so a file from someone who may not upload isn't read at all.
+attachmentRouter.post("/:layer/:object/addAttachment", requireWrite, uploadFile, function (req, res, next) {
   let dir, fileName, base;
   try {
     dir = safeJoin(configOptions.filepath, req.params.layer, req.params.object, req.body.group);
