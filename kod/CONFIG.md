@@ -116,6 +116,12 @@ Acts as a attachment server for files from Nationella geodataplattformen (NGP). 
 
     	allowedExtensions - the file extensions (without dot) that may be uploaded. Other files get 415. Default jpg, jpeg, png, gif, webp, heic, bmp, tif, tiff, pdf, txt, csv, rtf, doc, docx, xls, xlsx, ppt, pptx, odt, ods, odp, msg, eml, dwg, dxf, zip.
 
+    	require_login - true to require login for uploading and deleting attachments; reading is always open. Default false, for sites without AD. The user is taken from the session cookie set when the map logs in through /origoserver/auth (the OIDC plugin), so this requires that auth, session and reportIssues are configured (the AD account for the group lookup is taken from reportIssues) and that the map is on the same address as origoserver. Deleting all attachments of an object with GET is turned off when login is required.
+
+    	ad_group - the AD group, or a list of groups, whose members may upload and delete. Default the group in reportIssues.
+
+    	allowed_origins - with require_login: the addresses (Origin) that may upload and delete, e.g. ['https://karta.sundsvall.se']. The session cookie is sent with requests from other sites too, so other origins are refused. Default the same address as the server (Host or X-Forwarded-Host).
+
     	inlineExtensions - the file extensions that open in the browser. Everything else is sent as a download, and all files are sent with nosniff and a sandbox Content-Security-Policy. Default jpg, jpeg, png, gif, webp, bmp. Don't add svg or html, since they can run scripts.
 
 - MatomoDashboard - serves the statistics page from [origo-matomo-plugin](https://gitlab.sundsvall.se/gis/origo-matomo-plugin) at /origoserver/matomo/

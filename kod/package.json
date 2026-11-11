@@ -10,6 +10,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "test:attachment": "node --test handlers/attachment/test/*.test.js",
+    "test:auth": "node --test handlers/auth/test/*.test.js",
     "test:dialogkarta": "node --test handlers/dialogkarta/test/*.test.js"
   },
   "dependencies": {

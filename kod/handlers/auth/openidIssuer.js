@@ -1,7 +1,9 @@
 const conf = require('../../conf/config');
 const { Issuer, custom } = require('openid-client');
 
-if (conf.auth.http_timeout) {
+// conf.auth may be missing. The module is still loaded by requireAdGroupMember, which then
+// responds with an error instead of logging in.
+if (conf.auth && conf.auth.http_timeout) {
   custom.setHttpOptionsDefaults({
     timeout: conf.auth.http_timeout
   });
@@ -12,6 +14,9 @@ let client = undefined;
 const getOpenidClient = async () => {
   if (client) {
     return client;
+  }
+  if (!conf.auth) {
+    throw new Error('Login is not configured (conf.auth is missing)');
   }
   const issuer = await Issuer.discover(conf.auth.openidIssuer);
   client = new issuer.Client({
