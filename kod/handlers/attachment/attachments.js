@@ -12,6 +12,27 @@ if (conf["attachment"]) {
   configOptions = Object.assign({}, conf["attachment"]);
 }
 
+// Upload limits. Override in config.js with attachment.maxFileSize (bytes),
+// attachment.allowedExtensions and attachment.inlineExtensions (lists of file extensions without dot).
+const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
+const DEFAULT_ALLOWED_EXTENSIONS = [
+  "jpg", "jpeg", "png", "gif", "webp", "heic", "bmp", "tif", "tiff",
+  "pdf", "txt", "csv", "rtf",
+  "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp",
+  "msg", "eml", "dwg", "dxf", "zip",
+];
+// Shown in the browser when opened; everything else is sent as a download. Not SVG or HTML,
+// since they can run scripts in the server's origin.
+const DEFAULT_INLINE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "bmp"];
+
+const lowerList = (list, fallback) => (Array.isArray(list) ? list : fallback).map((ext) => String(ext).toLowerCase().replace(/^\./, ""));
+const maxFileSize = Number(configOptions.maxFileSize) > 0 ? Number(configOptions.maxFileSize) : DEFAULT_MAX_FILE_SIZE;
+const allowedExtensions = lowerList(configOptions.allowedExtensions, DEFAULT_ALLOWED_EXTENSIONS);
+const inlineExtensions = lowerList(configOptions.inlineExtensions, DEFAULT_INLINE_EXTENSIONS);
+
+const extensionOf = (filename) => path.extname(filename).slice(1).toLowerCase();
+const isAllowedFile = (filename) => allowedExtensions.includes(extensionOf(filename));
+
 function safeJoin(base, ...segments) {
   const resolvedBase = path.resolve(base);
   segments.forEach((seg) => {
@@ -153,6 +174,14 @@ function fetchDoc(req, res, next) {
       const groupPath = path.join(dir, group);
       const filename = fs.readdirSync(groupPath).find((name) => getUuid(`${group}_${name}`, 5) === req.params.id);
       if (filename) {
+        // Only safe images open in the browser; the rest is a download. nosniff and the sandbox
+        // stop an uploaded file from running as a page in the server's origin.
+        const disposition = inlineExtensions.includes(extensionOf(filename)) ? "inline" : "attachment";
+        res.set({
+          "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          "X-Content-Type-Options": "nosniff",
+          "Content-Security-Policy": "default-src 'none'; sandbox",
+        });
         res.sendFile(path.join(groupPath, filename));
         return;
       }
@@ -263,4 +292,6 @@ module.exports = {
   deleteAllAttachments,
   listAllAttachments,
   safeJoin,
+  isAllowedFile,
+  maxFileSize,
 };

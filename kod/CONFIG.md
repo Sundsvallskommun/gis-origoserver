@@ -108,6 +108,16 @@ Acts as a attachment server for files from Nationella geodataplattformen (NGP). 
 
     	query - A string with JSON to specify the query on which a detailed plan is searched for and specify where to inject identifier in the query between two $ characters, f.e. '{"feature.typ": {"eq": "detaljplan"}, "detaljplan.beteckning": {"eq": "$planid$"}, "detaljplan.status": {"in": ["laga kraft"]}}'.
 
+- Attachment - stores attachments for features in layers as files, at /origoserver/attachment/. Only enabled when attachment exists in config.js.
+
+    	filepath - the directory for the files. They are stored as <filepath>/<layer>/<object>/<group>/<file name>.
+
+    	maxFileSize - the largest file in bytes. Default 26214400 (25 MB). A larger file gets 413.
+
+    	allowedExtensions - the file extensions (without dot) that may be uploaded. Other files get 415. Default jpg, jpeg, png, gif, webp, heic, bmp, tif, tiff, pdf, txt, csv, rtf, doc, docx, xls, xlsx, ppt, pptx, odt, ods, odp, msg, eml, dwg, dxf, zip.
+
+    	inlineExtensions - the file extensions that open in the browser. Everything else is sent as a download, and all files are sent with nosniff and a sandbox Content-Security-Policy. Default jpg, jpeg, png, gif, webp, bmp. Don't add svg or html, since they can run scripts.
+
 - MatomoDashboard - serves the statistics page from [origo-matomo-plugin](https://gitlab.sundsvall.se/gis/origo-matomo-plugin) at /origoserver/matomo/
 
 Build the page with `npm run build:dashboard` in origo-matomo-plugin and copy the contents of build/dashboard to the folder given in dir. The server forwards the page's requests to the Matomo Reporting API with the token below, so users don't need a token of their own. Only the API methods the page uses are forwarded. Create a Matomo user with view access only to the maps and use that user's token.
