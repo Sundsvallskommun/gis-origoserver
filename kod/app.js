@@ -8,7 +8,6 @@ var path = require('path');
 
 var routes = require('./routes/index');
 const lmApiProxy = require('./routes/lmapiproxy');
-var adminRouter = require('./routes/admin');
 var mapStateRouter = require('./routes/mapstate');
 var errors = require('./routes/errors');
 var conf = require('./conf/config');
@@ -23,6 +22,9 @@ const limiter = rateLimit({
 	max: 10000, // Limit each IP to 10000 requests per `window` (here, per 15 minutes)
 	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
 	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  ...(conf['behindProxy']?.trimForwardedPorts && { keyGenerator: (req, res) => {
+    return req.ip.match(/\[?((\d+\.?){4}|((:?[a-z0-9]{0,8}){2,8}))\]?/i, "$1")[1]; // Client ip without port
+  }})
 })
 
 // apply rate limiter to all requests
@@ -195,7 +197,10 @@ app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit:50000}
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/origoserver/', routes);
-app.use('/admin', adminRouter);
+// The admin interface is only enabled if conf.adminDataBase exists, since it opens that database.
+if (conf["adminDataBase"]) {
+  app.use("/admin", require("./routes/admin"));
+}
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
   conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/origoserver/lmapiproxy/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));

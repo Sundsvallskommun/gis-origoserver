@@ -11,8 +11,8 @@ var mssqlConnect = function(res, queries, dbConfig) {
     user: dbConfig.user,
     password: dbConfig.password,
     server: dbConfig.connectString,
-    database: dbConfig.database
-
+    database: dbConfig.database,
+    trustServerCertificate: dbConfig.trustServerCertificate,
   }
   var connection;
   var searchResult = [];
@@ -22,8 +22,11 @@ var mssqlConnect = function(res, queries, dbConfig) {
 
       // Query
       var promises = queries.map((query) => {
-        return new mssql.Request(connection)
-          .query(query.queryString).then((result) => {
+        var request = new mssql.Request(connection);
+        if (query.parameters && query.parameters.search !== undefined) {
+          request.input('search', mssql.NVarChar, query.parameters.search);
+        }
+        return request.query(query.queryString).then((result) => {
             if (query.hasOwnProperty('cb')) {
               searchResult = searchResult.concat(query.cb(result.recordset));
             } else {

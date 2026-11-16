@@ -72,14 +72,14 @@ attachmentRouter.post("/:layer/:object/addAttachment", requireWrite, uploadFile,
     return;
   }
 
-  // Create directory if doesn't already exists
+  // Create the directory if it doesn't already exist
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (typeof req.file !== "undefined") {
-    // Write the file to disc
+    // Write the file to disk
     fs.writeFileSync(fileName, req.file.buffer);
-    // Create response object to send back after successful saved
+    // Create the response object to send back after a successful save
     const retval = {
       addAttachmentResult: {
         // Same id as listAttachments and deleteAttachments give the file: group and file name.

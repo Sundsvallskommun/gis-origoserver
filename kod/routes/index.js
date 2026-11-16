@@ -7,7 +7,6 @@ var searchAddressEstate = require('../handlers/searchaddressestate');
 var search = require('../handlers/search');
 var singleSearch = require('../handlers/singlesearch');
 var getInskrivning = require('../handlers/getinskrivning');
-var proxy = require('../handlers/proxy');
 var lmProxy = require('../handlers/lmproxy');
 var lmProxyVer = require('../handlers/lmproxyver');
 var excelCreator = require('../handlers/excelcreator');
