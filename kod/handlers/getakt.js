@@ -60,7 +60,7 @@ proxy.on('proxyReq', (proxyReq, req, res) => {
 
 // If the http-proxy throws an error, log it
 proxy.on('error', (err) => {
-  console.log('AktDirekt proxy: ', err);
+  console.error('AktDirekt proxy:', err.code || err.message);
 });
 
 // Do the request in proper order
@@ -73,7 +73,7 @@ const getAkt = async (req, res) => {
       token = result.access_token;
     })
     .catch((err) => {
-      console.log(err);
+      console.error('AktDirekt: fetching a token failed:', String(err.message || err));
     });
 
   // Send the request

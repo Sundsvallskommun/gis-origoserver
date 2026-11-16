@@ -2,6 +2,8 @@
 // the network error code. Not the whole error, since error.config holds the url, params, headers
 // and body of the request, which can contain API keys.
 module.exports = function describeAxiosError(error) {
+  // Some callers reject with a plain string
+  if (error === null || typeof error !== 'object') return String(error);
   if (error.response) {
     const data = error.response.data;
     let body;

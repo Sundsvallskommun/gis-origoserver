@@ -327,7 +327,6 @@ function concatResult(features, municipalityArray, searchString) {
 function doGetFromPointWait(req, res, options) {
   axios(options)
   .then(function ({ data: parsedBody }) {
-    console.log('doGetFromPointWait result: ' + JSON.stringify(parsedBody));
     res.send(concatEstateNameResult(parsedBody));
   })
   .catch(function (err) {

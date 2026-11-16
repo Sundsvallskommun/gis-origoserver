@@ -1,6 +1,7 @@
 var conf = require('../conf/config');
 var objectifier = require('../lib/utils/objectifier');
 var axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const lmtokenhandler = require('./lmtokenhandler');
 
 var confObj = 'lmbuilding';
@@ -28,7 +29,7 @@ const lmBuilding = async (req, res) => {
       // Handle search request based on type (registerenhet or byggnad)
       await handleSearchRequest(req, res, config, tokenObject.token, searchUrl.includes("registerenhet"));
     } catch (error) {
-      console.error('Error:', error);
+      console.error('lmbuilding:', describeAxiosError(error));
       res.render('lmbuildingerror', { error: 'An error occurred during processing.' });
     }
   } else {
@@ -79,7 +80,7 @@ async function handleSearchRequest(req, res, config, token, isRegisterEnhet) {
       await getBuildingInformation(req, res, config, token, [id], registerEnhetId, isRegisterEnhet);
     }
   } catch (error) {
-    console.error('Error during search request:', error);
+    console.error('lmbuilding: search request failed:', describeAxiosError(error));
     res.render('lmbuildingerror', { error: 'An error occurred during processing.' });
   }
 }
@@ -120,7 +121,7 @@ async function getBuildingInformation(req, res, config, token, objektList, fid, 
       res.render('lmbuildingSingleBuilding', response.data);
     }
   } catch (error) {
-    console.error('ERROR getBuilding!', error);
+    console.error('ERROR getBuilding!', describeAxiosError(error));
     res.render('lmbuildingerror', { fid: fid });
   }
 }

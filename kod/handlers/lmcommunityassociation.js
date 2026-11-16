@@ -1,5 +1,6 @@
 var conf = require('../conf/config');
 var axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const { URL } = require('url'); 
 const lmtokenhandler = require('./lmtokenhandler');
 
@@ -218,7 +219,7 @@ const lmCommunityAssociation = async (req, res) => {
         // Process GET or POST requests for elevation data
         await doProcessRequests(req, res, config, tokenObject.token);
       } catch (error) {
-        console.log('Error:', error);
+        console.error('lmcommunityassociation:', describeAxiosError(error));
         res.status(500).send({ 'error': error.message });
       }
   
