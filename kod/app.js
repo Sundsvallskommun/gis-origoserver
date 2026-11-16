@@ -8,7 +8,6 @@ var path = require('path');
 
 var routes = require('./routes/index');
 const lmApiProxy = require('./routes/lmapiproxy');
-var adminRouter = require('./routes/admin');
 var mapStateRouter = require('./routes/mapstate');
 var errors = require('./routes/errors');
 var conf = require('./conf/config');
@@ -198,7 +197,10 @@ app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit:50000}
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/origoserver/', routes);
-app.use('/admin', adminRouter);
+// The admin interface is only enabled if conf.adminDataBase exists, since it opens that database.
+if (conf["adminDataBase"]) {
+  app.use("/admin", require("./routes/admin"));
+}
 app.use('/mapstate', mapStateRouter);
 if (conf['lmapiproxy']) {
   conf['lmapiproxy'].forEach(proxyAppConfig => app.use(`/origoserver/lmapiproxy/${proxyAppConfig.id}`, lmApiProxy(proxyAppConfig)));
