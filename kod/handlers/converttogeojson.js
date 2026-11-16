@@ -99,6 +99,17 @@ const convertToGeojson = async (req, res) => {
   }
 }
 
+// A request-promise error as a short string without url or headers: the status and the start of
+// the response body, or the network error code.
+function describeRequestError(err) {
+  if (err.statusCode) {
+    const body = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+    return `HTTP ${err.statusCode} ${String(body).slice(0, 500)}`;
+  }
+  const cause = err.cause || err.error;
+  return (cause && (cause.code || cause.message)) || err.message;
+}
+
 // Export the module
 module.exports = convertToGeojson;
 
@@ -189,8 +200,10 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
           try {
             body = JSON.parse(result);
           } catch (error) {
-            console.log(error);
-            res.status(500).send({ error, config: configOptions });
+            // Not configOptions: url and headers can hold API keys.
+            console.error(`converttogeojson ${configOptions.name}: response is not JSON:`, error.message);
+            res.status(500).send({ error: 'Response is not JSON' });
+            return;
           }
         } else {
           var bodyWithCorrectEncoding = iconv.decode(Buffer.concat(chunks), configOptions.encoding);
@@ -204,8 +217,8 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
       }
     })
     .catch(function (err) {
-      console.log(err);
-      console.log('ERROR doGet!');
+      // Not the whole err: err.options and err.response hold the url and headers, i.e. API keys.
+      console.error(`ERROR doGet! converttogeojson ${configOptions.name}:`, describeRequestError(err));
       res.status(500).send({error: 'ERROR doGet!'});
     });
   }
