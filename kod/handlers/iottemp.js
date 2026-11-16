@@ -6,6 +6,17 @@ const url = require('url');
 
 var proxyUrl = 'iotTemp';
 
+// An axios error as a short string. Not the whole error: error.config holds the url and params,
+// i.e. the API key.
+function describeAxiosError(error) {
+  if (error.response) {
+    const data = error.response.data;
+    const body = typeof data === 'string' ? data : JSON.stringify(data);
+    return `HTTP ${error.response.status} ${String(body).slice(0, 500)}`;
+  }
+  return error.code || error.message;
+}
+
 async function getTempSensors(url, apikey) {
   var sensors = [];
   var requestOptions = {
@@ -20,7 +31,7 @@ async function getTempSensors(url, apikey) {
         });
 
       })
-      .catch(error => console.log('error', error));
+      .catch(error => console.error('iottemp: fetching sensors failed:', describeAxiosError(error)));
 
   return sensors;
 }
@@ -37,7 +48,7 @@ async function getTemps(sensors, url, apikey) {
   await axios
     .all(axiosArray)
     .then(console.log('Get all temperatures from sensors!'))
-    .catch(error => console.log('error', error));
+    .catch(error => console.error('iottemp: fetching temperatures failed:', describeAxiosError(error)));
 
   return temperatures;
 }
@@ -46,7 +57,12 @@ async function getTemp(sensorId, url, apikey) {
   let temperature = [];
 
   await axios.get(url, { params: {sensor: sensorId, apikey: apikey} })
-            .then(response => { temperature = response.data.sensors[0] });
+            .then(response => { temperature = response.data.sensors[0] })
+            .catch(error => {
+              // A new error with a readable message, so that the axios error, whose config holds
+              // the API key, never reaches the error handlers.
+              throw new Error(`iottemp: fetching temperature for ${sensorId} failed: ${describeAxiosError(error)}`);
+            });
 
   return temperature;
 }
