@@ -92,6 +92,24 @@ An openID connect provider is required for this to work.
 
     	display_name - attribute from user-information displayed in the user menu (Origo with oidc-plugin).
 
+    	The settings below are used where login is limited to members of an AD group (report-issues, matomoDashboard, dialogkarta and attachment). Members of nested groups count.
+
+    	ad_url - url to the AD server, f.e. 'ldaps://ad.example.se'.
+
+    	ad_base_dn - base DN for the lookups, f.e. 'dc=example,dc=se'.
+
+    	ad_username - the AD account used for the lookups.
+
+    	ad_password - the password for the AD account. Preferably set it with an environment variable.
+
+    	ad_ca_file - the CA certificate for the AD server, if Node doesn't trust it. A relative path is from the server's root folder.
+
+    	ad_cache_minutes - how long the members of a group are cached. Default 15.
+
+    	ad_group - the AD group, or a list of groups, used where no group of its own is set. Optional.
+
+    	username_claim - the claim in userinfo with the user's AD username (sAMAccountName). Default 'sub'.
+
 - NGP Detaljplan - get documents from detailed plans
 
 Acts as a attachment server for files from Nationella geodataplattformen (NGP). First setup the Oauth2 keys in [Lantmäteriet APImanager](https://apimanager.lantmateriet.se/devportal/apis) and add GeodatakatalogSökning and GeodatakatalogNedladdning as subscribtions.

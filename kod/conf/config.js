@@ -16,7 +16,10 @@ module.exports = {
     scope: 'am_application_scope default'
   },
   proxy: {
-    proxyUrl: 'proxy?url='
+    // Whitelist for /proxy?url=. Protocol and host must match exactly, and the path must
+    // start with the given path. An empty list denies all requests.
+    // Example: 'https://karta.example.se/geoserver/'
+    allowedUrls: []
   },
   'lmproxy-ver': {
     url: "http://maps-ver.lantmateriet.se/",
@@ -33,46 +36,105 @@ module.exports = {
     }
   },
   lmbuilding: {
-    url: 'https://api.lantmateriet.se/distribution/produkter/byggnad/v2',
-    url_token: "https://api.lantmateriet.se/token",
+    url: 'https://api.lantmateriet.se/distribution/produkter/byggnad/v3',
+    url_token: "https://apimanager.lantmateriet.se/oauth2/token",
+    url_revoke: "https://apimanager.lantmateriet.se/oauth2/revoke",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'byggnad_direkt_v3_read'
   },
   lmelevation: {
-    url: "https://api.lantmateriet.se/distribution/produkter/hojd/v1/rest/api",
-    url_token: "https://api.lantmateriet.se/token",
+    url: "https://api.lantmateriet.se/distribution/produkter/markhojd/v1",
+    url_token: "https://apimanager.lantmateriet.se/oauth2/token",
+    url_revoke: "https://apimanager.lantmateriet.se/oauth2/revoke",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'markhojd_direkt_v1_read'
   },
   lmsearchplacename: {
-    url: "https://api.lantmateriet.se/distribution/produkter/ortnamn/v2.1",
+    url: "https://api.lantmateriet.se/distribution/produkter/ortnamn/v2.2",
     url_token: "https://api.lantmateriet.se/token",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'ortnamn_direkt_read'
   },
   lmsearchestate: {
-    url: "https://api.lantmateriet.se/distribution/produkter/registerbeteckning/v4/",
+    url: "https://api.lantmateriet.se/distribution/produkter/registerbeteckning/v5/",
     url_token: "https://api.lantmateriet.se/token",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'registerbeteckning_direkt_v5_read'
   },
   lmsearchaddress: {
-    url: "https://api.lantmateriet.se/distribution/produkter/belagenhetsadress/v4.1/",
+    url: "https://api.lantmateriet.se/distribution/produkter/belagenhetsadress/v4.2",
     url_token: "https://api.lantmateriet.se/token",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'belagenhetsadress_direkt_v42_read'
   },
   lmgetestate: {
-    url: "https://api.lantmateriet.se/distribution/produkter/fastighet/v2.1/",
+    url: "https://api.lantmateriet.se/distribution/produkter/fastighetsamfallighet/v3.1",
     url_token: "https://api.lantmateriet.se/token",
     consumer_key: 'xxxxx',
     consumer_secret: 'xxxxx',
-    scope: 'am_application_scope default'
+    scope: 'fastighetochsamfallighet_direkt_v31_read'
+  },
+  lmservices: {
+    apps: {
+      defaultApp: {
+        url: 'https://api.lantmateriet.se/',
+        url_token: "https://apimanager.lantmateriet.se/oauth2/token",
+        url_revoke: "https://apimanager.lantmateriet.se/oauth2/revoke",
+        consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXXXX',
+        consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXX',
+        scope: 'belagenhetsadress_direkt_v42_read byggnad_direkt_v3_read fastighetochsamfallighet_direkt_v31_read gemensamhetsanlaggning_direkt_v21_read inskrivning_direkt_v3_read markreglerande_bestammelse_direkt_v2_read rattighet_direkt_v21_read taxering_direkt'
+      }
+    },
+    services: {
+      belagenhetsadress: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/belagenhetsadress/v4.2'
+      },
+      byggnad: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/byggnad/v3'
+      },
+      fastighetsamfallighet: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/fastighetsamfallighet/v3.1'
+      },
+      gemensamhetsanlaggning: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/gemensamhetsanlaggning/v2.1'
+      },
+      inskrivning: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/inskrivning/v3'
+      },
+      markreglerandebestammelse: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/markreglerandebestammelse/v2'
+      },
+      rattighet: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/rattighet/v2.1'
+      },
+      taxering: {
+        app: 'defaultApp',
+        url: 'https://api.lantmateriet.se/distribution/produkter/taxering/v3'
+      }
+    }
+  },
+  lmcommunityassociation: {
+    url: "https://api.lantmateriet.se/distribution/produkter/samfallighetsforening/v2.2",
+    url_ga: "https://api.lantmateriet.se/distribution/produkter/gemensamhetsanlaggning/v2.1",
+    url_fs: "https://api.lantmateriet.se/distribution/produkter/fastighetsamfallighet/v3.1",
+    url_token: "https://apimanager.lantmateriet.se/oauth2/token",
+    url_revoke: "https://apimanager.lantmateriet.se/oauth2/revoke",
+    consumer_key: 'xxxxx',
+    consumer_secret: 'xxxxx',
+    grant_type: 'client_credentials',
+    scope: 'samfallighetsforening_direkt_v22_read gemensamhetsanlaggning_direkt_v21_read fastighetochsamfallighet_direkt_v31_read',
   },
   cors: {
     origin: '*',
@@ -126,5 +188,41 @@ module.exports = {
         encoding: 'iso-8859-1'
       }
     ]
+  },
+  auth: {
+    openidIssuer: 'https://openid-provider/.well-known/openid-configuration',
+    redirect_uri: 'https://karta.xxx.se',
+    http_timeout: 10000,
+    client_id: 'xxxxx',
+    client_secret: process.env.AUTH_CLIENT_SECRET,
+    display_name: 'samaccountname',
+    clients: {
+      my_client: 'https://www.myclient.se',
+      my_other_client: 'https://www.myotherclient.com'
+    },
+    scope: 'openid email roles',
+  //   ad_url: 'ldaps://ad.example.se',
+  //   ad_base_dn: 'dc=example,dc=se',
+  //   ad_username: 'svc-origoserver@example.se',
+  //   ad_password: process.env.AD_PASSWORD,
+  //   ad_ca_file: 'conf/ad-ca.pem',
+  //   ad_cache_minutes: 15,
+  //   ad_group: 'Origoserver-redigerare',
+  //   username_claim: 'sub'
+  },
+  ngpDetaljplan: {
+    url_base: "https://api.lantmateriet.se/",
+    client_key: 'xxxxx',
+    client_secret: 'xxxxx',
+    grant_type: 'client_credentials',
+    scope: 'am_application_scope default',
+    query: '{"feature.typ": {"eq": "detaljplan"}, "detaljplan.objektidentitet": {"eq": "$planid$"}, "detaljplan.status": {"in": ["laga kraft"]}}'
+  },
+  attachment: {
+    filepath: "C:\\attachment\\"
+  },
+  behindProxy: {
+    trustProxy: false, // Configure express for use behind proxy. If true, the client’s IP address is understood as the left-most entry in the X-Forwarded-For header (should generally be avoided in production). For other options, see https://expressjs.com/en/guide/behind-proxies.html.
+    trimForwardedPorts: false // When trusting a source IP forwarded by a proxy, remove port numbers. Otherwise a client may bypass the rate-limiter by changing its port number.
   }
 }

@@ -1,5 +1,5 @@
-// Valbar inloggning för bilagor: av som standard, Origin-kontroll och användaren ur sessionen.
-// AD-kontrollen byts ut, så testet behöver varken inloggningstjänst eller AD.
+// Optional login for attachments: off by default, the Origin check and the user from the session.
+// The AD check is replaced, so the test needs neither a login service nor AD.
 //   npm run test:attachment
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -10,7 +10,7 @@ require.cache[configFile] = { id: configFile, filename: configFile, loaded: true
 
 const createRequireWrite = require('../requireWrite');
 
-// Släpper igenom den som har en session med userinfo.sub i "gruppen".
+// Lets through whoever has a session with userinfo.sub in the "group".
 let options;
 const fakeRequireAdGroupMember = (opts) => {
   options = opts;

@@ -1,17 +1,18 @@
-// Valbar inloggning för att ändra bilagor (ladda upp och ta bort). Med require_login: true i
-// conf.attachment måste användaren vara inloggad i kartan och finnas i ad_group (en grupp eller en
-// lista med grupper; standard gruppen i conf.reportIssues). Läsning är alltid öppen.
+// Optional login for changing attachments (upload and delete). With require_login: true in
+// conf.attachment the user must be logged in to the map and be in ad_group (a group or a list of
+// groups; default conf.auth.ad_group). Reading is always open.
 //
-// Origos bilageklient skickar ingen token, men redigeringskartornas OIDC-plugin loggar in via
-// /origoserver/auth/access_token, som sparar användaren i sessionen. Därför läses användaren ur
-// sessionskakan, och kartan måste ligga på samma adress som origoserver.
+// Origo's attachment client sends no token, but the editing maps' OIDC plugin logs in through
+// /origoserver/auth/access_token, which stores the user in the session. The user is therefore read
+// from the session cookie, and the map must be on the same address as origoserver.
 //
-// Kakan skickas även med anrop från andra sajter (sameSite 'none'), så anropet måste också komma
-// från kartans egen adress (Origin), annars kan en annan sida ladda upp eller ta bort bilagor i
-// användarens namn.
+// The cookie is also sent with requests from other sites (sameSite 'none'), so the request must
+// also come from the map's own address (Origin), otherwise another page could upload or delete
+// attachments in the user's name.
 //
-//   allowed_origins - adresser som får ändra, t.ex. ['https://karta.sundsvall.se']. Standard
-//                     samma adress som servern (Origin jämförs med Host/X-Forwarded-Host).
+//   allowed_origins - addresses that may make changes, e.g. ['https://karta.sundsvall.se'].
+//                     Default the same address as the server (Origin is compared with
+//                     Host/X-Forwarded-Host).
 
 const conf = require('../../conf/config');
 
@@ -25,13 +26,13 @@ function isAllowedOrigin(origin, req, allowedOrigins) {
   try {
     originHost = new URL(normalized).host;
   } catch {
-    // Bland annat Origin: null från en sandlådad sida
+    // Among others Origin: null from a sandboxed page
     return false;
   }
   return originHost === host(req.get('x-forwarded-host') || req.get('host'));
 }
 
-// requireAdGroupMember kan bytas ut i tester.
+// requireAdGroupMember can be replaced in tests.
 module.exports = function createRequireWrite(attachmentConf = {}, {
   requireAdGroupMember = require('../auth/requireAdGroupMember'),
 } = {}) {

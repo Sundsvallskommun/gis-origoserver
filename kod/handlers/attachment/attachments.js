@@ -155,7 +155,7 @@ function listAllAttachments(req, res, next) {
 }
 
 /**
- * Get the the document with id from a specific object and group
+ * Get the document with id from a specific object and group
  *
  * @function
  * @name fetchDoc
@@ -191,7 +191,7 @@ function fetchDoc(req, res, next) {
 }
 
 /**
- * Delete a attachment files identified by uuid
+ * Delete an attachment file identified by uuid
  *
  * @function
  * @name deleteAttachment
@@ -235,7 +235,7 @@ function deleteAttachments(req, res, next) {
 }
 
 /**
- * Delete all attachment files for a object
+ * Delete all attachment files for an object
  *
  * @function
  * @name deleteAllAttachments
