@@ -109,7 +109,9 @@ async function doSearchAsyncCall(req, res, municipalityArray, urlParams, configO
         return concatResult(parameters.features, municipality, req.query.q);
       })
       .catch(function (err) {
-        console.error(`ERROR doSearchAsyncCall! lmsearchplacename ${municipality}:`, describeAxiosError(err));
+        // A constant format string, and the municipality from the request without line breaks
+        console.error('ERROR doSearchAsyncCall! lmsearchplacename %s: %s',
+          String(municipality).replace(/[\r\n]/g, ''), describeAxiosError(err));
         return [];
       });
   });
