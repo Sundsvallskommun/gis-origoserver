@@ -17,16 +17,8 @@ module.exports = function proxy(req, res) {
   proxyRequest(req, res, {
     url: url,
     // Only follow redirects that also point to an allowed url
-    followRedirect: function(response) {
-      var location = response.headers.location;
-      if (!location) {
-        return false;
-      }
-      try {
-        return Boolean(toAllowedUrl(new URL(location, response.request.uri.href).href));
-      } catch (e) {
-        return false;
-      }
+    allowRedirect: function(location) {
+      return Boolean(toAllowedUrl(location));
     }
   });
 }
@@ -39,6 +31,7 @@ function sendError(res, status, body) {
   res.end(body);
 }
 
+// Without line breaks, so that a request can't add lines of its own to the log
 function sanitizeForLog(value) {
   return String(value).replace(/[\r\n]/g, '');
 }
@@ -49,6 +42,7 @@ function parseAllowedUrls(urls) {
     return {
       protocol: parsed.protocol,
       host: parsed.host,
+      origin: parsed.origin,
       pathname: parsed.pathname
     };
   });
@@ -56,7 +50,9 @@ function parseAllowedUrls(urls) {
 
 // Returns the normalized url if it matches the whitelist, otherwise null.
 // Protocol and host (including port) must match exactly, and the path must start with
-// the allowed path, compared by whole segments.
+// the allowed path, compared by whole segments. The returned url is built from the
+// whitelist's origin and only the path and query from the request, so the server that is
+// requested always comes from the configuration.
 function toAllowedUrl(urlString) {
   var target;
   try {
@@ -70,7 +66,7 @@ function toAllowedUrl(urlString) {
   if (target.username || target.password) {
     return null;
   }
-  var isAllowed = allowedUrls.some(function(allowed) {
+  var match = allowedUrls.find(function(allowed) {
     if (allowed.protocol !== target.protocol || allowed.host !== target.host) {
       return false;
     }
@@ -80,8 +76,11 @@ function toAllowedUrl(urlString) {
     var prefix = allowed.pathname.endsWith('/') ? allowed.pathname : allowed.pathname + '/';
     return target.pathname.startsWith(prefix);
   });
-  // Use the normalized url so that exactly the checked address is requested
-  return isAllowed ? target.href : null;
+  if (!match) {
+    return null;
+  }
+  // The normalized path and query, so that exactly the checked address is requested
+  return match.origin + '/' + target.pathname.slice(1) + target.search;
 }
 
 function buildUrl(params) {

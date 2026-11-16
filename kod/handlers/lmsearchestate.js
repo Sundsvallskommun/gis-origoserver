@@ -1,6 +1,7 @@
 var conf = require('../conf/config');
 var lmGetEstate = require('../handlers/lmgetestate');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const url = require('url');
 const { compareRelevance, compareNamesNaturally } = require('../utils/compare');
 const lmtokenhandler = require('./lmtokenhandler');
@@ -175,9 +176,8 @@ async function doSearchAsyncCall(municipalityArray, searchValue, configOptions, 
           'scope': `${scope}`
         }
     }
-    promiseArray.push(rp.get(options)
-      .then(function(result) {
-        var parameters = JSON.parse(result);
+    promiseArray.push(axios(options)
+      .then(function ({ data: parameters }) {
         var beteckningsid = [];
         parameters.forEach(function(parameter) {
           if (parameter.objektidentitet) {
@@ -210,14 +210,13 @@ async function doSearchAsyncCall(municipalityArray, searchValue, configOptions, 
 }
 
 function getEstateWait(options, res, municipalityArray) {
-  rp(options)
-  .then(function (parsedBody) {
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     // Send the resulting object as json and end response
     res.send(concatResult(parsedBody.features, municipalityArray, options.searchString));
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR getEstateWait!');
+    console.error('ERROR getEstateWait!', describeAxiosError(err));
     res.send([]);
   });
 }
@@ -227,14 +226,13 @@ async function getEstateAsyncCall(req, res, municipalityArray, objectIds, config
     // Setup the call for getting the objects found in search and wait for result
     var options = {
       method: 'POST',
-      uri: configOptions.url + '?srid=' + srid,
-      body: objectIds,
+      url: configOptions.url + '?srid=' + srid,
+      data: objectIds,
       headers: {
         'content-type': 'application/json',
         'Authorization': `Bearer ${token}`,
         'scope': `${scope}`
-      },
-      json: true
+      }
     };
     getEstateWait(options, res, municipalityArray);
   } else {
@@ -327,14 +325,12 @@ function concatResult(features, municipalityArray, searchString) {
 }
 
 function doGetFromPointWait(req, res, options) {
-  rp(options)
-  .then(function (parsedBody) {
-    console.log('doGetFromPointWait result: ' + JSON.stringify(parsedBody));
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     res.send(concatEstateNameResult(parsedBody));
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR doGetFromPointWait!');
+    console.error('ERROR doGetFromPointWait!', describeAxiosError(err));
     res.send({});
   });
 }
@@ -348,8 +344,7 @@ async function doGetFromPointAsyncCall(req, res, configOptions, easting, northin
         'content-type': 'application/json',
         'Authorization': `Bearer ${token}`,
         'scope': `${scope}`
-      },
-      json: true // Automatically parses the JSON string in the response
+      }
   }
   await doGetFromPointWait(req, res, options);
 }
@@ -397,18 +392,16 @@ async function doGetEstateNumberAsyncCall(configOptions, easting, northing, toke
         'content-type': 'application/json',
         'Authorization': `Bearer ${token}`,
         'scope': `${scope}`
-      },
-      json: true // Automatically parses the JSON string in the response
+      }
   }
-  promiseArray.push(rp(options)
-    .then(function (parsedBody) {
+  promiseArray.push(axios(options)
+    .then(function ({ data: parsedBody }) {
       const numbers = concatEstateNumberResult(parsedBody);
       fnrObjektidentitet = numbers.fnrObjektidentitet;
       fnrObjektidentitetGA = numbers.fnrObjektidentitetGA;
     })
     .catch(function (err) {
-      console.log(err);
-      console.log('ERROR doGetEstateNumberWait!');
+      console.error('ERROR doGetEstateNumberWait!', describeAxiosError(err));
     })
   )
 

@@ -1,5 +1,6 @@
 var conf = require('../conf/config');
 var axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const lmtokenhandler = require('./lmtokenhandler');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 
@@ -30,7 +31,7 @@ const lmElevation = async (req, res) => {
       // Process GET or POST requests for elevation data
       await doGetAsyncCall(req, res, config, tokenObject.token);
     } catch (error) {
-      console.log('Error:', error);
+      console.error('lmelevation:', describeAxiosError(error));
       res.status(500).send({ 'error': error.message });
     }
 

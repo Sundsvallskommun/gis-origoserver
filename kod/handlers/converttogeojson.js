@@ -1,6 +1,6 @@
 var conf = require('../conf/config');
-var request = require('request');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 const url = require('url');
 const wkt = require('wkt');
@@ -99,35 +99,18 @@ const convertToGeojson = async (req, res) => {
   }
 }
 
-// A request-promise error as a short string without url or headers: the status and the start of
-// the response body, or the network error code.
-function describeRequestError(err) {
-  if (err.statusCode) {
-    const body = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
-    return `HTTP ${err.statusCode} ${String(body).slice(0, 500)}`;
-  }
-  const cause = err.cause || err.error;
-  return (cause && (cause.code || cause.message)) || err.message;
-}
-
 // Export the module
 module.exports = convertToGeojson;
 
 function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, excludeValue, excludeType, dateFilter) {
   // Setup the search call and wait for result
-  let options = {
+  // The raw bytes, so that the body can be decoded with configOptions.encoding.
+  const options = {
     url: encodeURI(configOptions.url),
     method: 'GET',
-    json: false  // Automatically parses the JSON string in the response set to true
+    responseType: 'arraybuffer',
+    headers: configOptions.headers
   }
-  if (typeof configOptions.headers !== 'undefined') {
-    options = {
-      url: encodeURI(configOptions.url),
-      method: 'GET',
-      json: false,  // Automatically parses the JSON string in the response set to true
-      headers: configOptions.headers
-    }
-  } 
 
   if(configOptions.type === 'mysql'){
     var con = mysql.createConnection({
@@ -186,12 +169,10 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
       res.sendStatus(500);
     });
   } else {
-    var chunks = [];
-    rp(options)
-    .on('data', function(chunk) {
-      chunks.push(chunk);
-    })
-    .then(function (result) {
+    axios(options)
+    .then(function (response) {
+      const raw = Buffer.from(response.data);
+      const result = raw.toString('utf8');
       var body = {};
       if (result.startsWith('<')) {        
         res.status(500).send({ error: 'Not JSON reponse!' });
@@ -206,7 +187,7 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
             return;
           }
         } else {
-          var bodyWithCorrectEncoding = iconv.decode(Buffer.concat(chunks), configOptions.encoding);
+          var bodyWithCorrectEncoding = iconv.decode(raw, configOptions.encoding);
           body = JSON.parse(bodyWithCorrectEncoding);
         }
         if (configOptions.arrayOfObjects === null) {
@@ -217,8 +198,8 @@ function doGet(req, res, configOptions, srid, filterOn, filterValue, excludeOn, 
       }
     })
     .catch(function (err) {
-      // Not the whole err: err.options and err.response hold the url and headers, i.e. API keys.
-      console.error(`ERROR doGet! converttogeojson ${configOptions.name}:`, describeRequestError(err));
+      // Not the whole err: err.config holds the url and headers, i.e. API keys.
+      console.error(`ERROR doGet! converttogeojson ${configOptions.name}:`, describeAxiosError(err));
       res.status(500).send({error: 'ERROR doGet!'});
     });
   }

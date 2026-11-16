@@ -1,6 +1,4 @@
 var conf = require('../conf/config');
-var request = require('request');
-var rp = require('request-promise');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 var query_overpass = require('query-overpass');
 const url = require('url');

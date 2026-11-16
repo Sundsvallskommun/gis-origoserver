@@ -1,14 +1,13 @@
 var conf = require('../conf/config');
 var objectifier = require('../lib/utils/objectifier');
-var request = require('request');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var inskrivning = require('../models/inskrivning');
 var parser = require('./inskrivning/parser');
 var referensParser = require('./inskrivning/referensparser');
 var lagfartParser = require('./inskrivning/lagfartparser');
 var tomtrattParser = require('./inskrivning/tomtrattparser');
 var tidigareParser = require('./inskrivning/tidigareparser');
-var getToken = require('../lib/tokenrequest');
 const url = require('url');
 var token;
 var handler = 'getInskrivning';
@@ -53,21 +52,18 @@ var getInskrivning = async (req, res) => {
 
 module.exports = getInskrivning;
 
+// Resolves with the token, or undefined if Lantmäteriet answered with an error status; then the
+// call below fails and the error page is shown. Rejects only on network errors.
 function getTokenWait(options) {
-  // Return promise to be invoked for authenticating on service requests
-  return new Promise((resolve, reject) => {
-      // Requesting the token service object
-      request(options, (error, response, body) => {
-          if (error) {
-            console.log('Error token:' + error);
-            reject('An error occured collecting token: ', error);
-          } else {
-            token = body.access_token;
-            // console.log('Got token ' + token);
-            resolve(body.access_token);
-          }
-      })
-  })
+  return axios({ ...options, validateStatus: () => true })
+    .then(({ data }) => {
+      token = data && data.access_token;
+      return token;
+    })
+    .catch((error) => {
+      console.log('Error token:', describeAxiosError(error));
+      throw 'An error occured collecting token';
+    });
 }
 
 async function getTokenAsyncCall(url_token, consumer_key, consumer_secret, scope) {
@@ -78,25 +74,23 @@ async function getTokenAsyncCall(url_token, consumer_key, consumer_secret, scope
       headers: {
          'Authorization': 'Basic ' + Buffer.from(consumer_key + ':' + consumer_secret).toString('base64')
       },
-      form: {
+      data: new URLSearchParams({
           'scope': scope,
           'grant_type': 'client_credentials'
-      },
-      json: true
+      })
   }
   var result = await getTokenWait(options);
   return result;
 }
 
 function doGetWait(req, res, options, objektid) {
-  rp(options)
-  .then(function (parsedBody) {
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     var inskrivning = parseResult(parsedBody);
     res.render('inskrivning', inskrivning);
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR doGetWait!');
+    console.error('ERROR doGetWait!', describeAxiosError(err));
     res.render('inskrivningerror', {
       fid: objektid
     });
@@ -112,8 +106,7 @@ async function doGetAsyncCall(req, res, config, objektid) {
         'Accept': 'application/json',
         'content-type': 'application/json',
         'Authorization': `Bearer ${token}`
-      },
-      json: true // Automatically parses the JSON string in the response
+      }
   }
 
   await doGetWait(req, res, options, objektid);

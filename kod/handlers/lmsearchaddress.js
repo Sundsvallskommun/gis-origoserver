@@ -1,5 +1,6 @@
 var conf = require('../conf/config');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const url = require('url');
 const { compareRelevance, compareNamesNaturally } = require('../utils/compare');
 const lmtokenhandler = require('./lmtokenhandler');
@@ -112,9 +113,8 @@ async function doSearchWithCodesAsyncCall(municipalityCodes, searchValue, config
           'scope': `${scope}`
         }
     }
-    promiseArray.push(rp.get(options)
-      .then(function(result) {
-        var parameters = JSON.parse(result);
+    promiseArray.push(axios(options)
+      .then(function ({ data: parameters }) {
         var objektidentitet = [];
 
         parameters.forEach(function(parameter) {
@@ -164,9 +164,8 @@ async function doSearchAsyncCall(municipalityArray, searchValue, configOptions, 
           'scope': `${scope}`
         }
     }
-    promiseArray.push(rp.get(options)
-      .then(function(result) {
-        var parameters = JSON.parse(result);
+    promiseArray.push(axios(options)
+      .then(function ({ data: parameters }) {
         var objektidentitet = [];
 
         parameters.forEach(function(parameter) {
@@ -200,22 +199,20 @@ async function doSearchAsyncCall(municipalityArray, searchValue, configOptions, 
 }
 
 function getAddressWait(options, res) {
-  rp(options)
-  .then(function (parsedBody) {
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     // Send the resulting object as json and end response
     res.send(concatResult(parsedBody.features, options.searchString));
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR getAddressWait!');
+    console.error('ERROR getAddressWait!', describeAxiosError(err));
     res.send([]);
   });
 }
 
 function getAddressPointWait(options, res, configOptions, token, scope, srid, format) {
-  rp(options)
-  .then(function (result) {
-    var parameters = JSON.parse(result);
+  axios(options)
+  .then(function ({ data: parameters }) {
     if (parameters.features[0].id !== undefined) {
       const options = {
           url: encodeURI(configOptions.url + '/' + parameters.features[0].id + '?includeData=total&srid=' + srid),
@@ -226,9 +223,8 @@ function getAddressPointWait(options, res, configOptions, token, scope, srid, fo
             'scope': `${scope}`
           }
       };
-      rp(options)
-      .then(function (adress) {
-        var registerenhet = JSON.parse(adress);
+      axios(options)
+      .then(function ({ data: registerenhet }) {
         if (format === 'Origo') {
           res.send(concatAddress(registerenhet.features[0]));
         } else {
@@ -236,16 +232,14 @@ function getAddressPointWait(options, res, configOptions, token, scope, srid, fo
         }
       })
       .catch(function (err) {
-        console.log(err);
-        console.log('ERROR getAddressPointWait!');
+        console.error('ERROR getAddressPointWait!', describeAxiosError(err));
         res.send({});
       });
     }
     return parameters;
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR getAddressPointWait!');
+    console.error('ERROR getAddressPointWait!', describeAxiosError(err));
     res.send({});
   });
 }
@@ -254,14 +248,13 @@ async function getAddressAsyncCall(req, res, objectIds, configOptions, token, sc
   // Setup the call for getting the objects found in search and wait for result
   var options = {
     method: 'POST',
-    uri: configOptions.url + '/?includeData=total&srid=' + srid,
-    body: objectIds,
+    url: configOptions.url + '/?includeData=total&srid=' + srid,
+    data: objectIds,
     headers: {
       'content-type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'scope': `${scope}`
-    },
-    json: true
+    }
   };
   // Only do the call if somethin was found in the search
   if (objectIds.length > 0) {
@@ -275,7 +268,7 @@ async function getAddressPointAsyncCall(northing, easting, req, res, configOptio
   // Setup the call for getting the objects found in search and wait for result
   var options = {
     method: 'GET',
-    uri: configOptions.url + '/punkt?punktSrid=' + srid + '&koordinater=' + northing + ',' + easting + '&includeData=total&srid=' + srid,
+    url: configOptions.url + '/punkt?punktSrid=' + srid + '&koordinater=' + northing + ',' + easting + '&includeData=total&srid=' + srid,
     headers: {
       'content-type': 'application/json',
       'Authorization': `Bearer ${token}`,

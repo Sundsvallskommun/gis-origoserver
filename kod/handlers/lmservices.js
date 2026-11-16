@@ -1,9 +1,10 @@
 const axios = require('axios').default;
+const describeAxiosError = require('../lib/describeaxioserror');
 const conf = require('../conf/config');
 const lmtokenhandler = require('../handlers/lmtokenhandler');
 
 function handleError(err) {
-  console.log(err);
+  console.error('lmservices:', describeAxiosError(err));
 }
 
 const makeRequest = async function makeRequest(opt) {
@@ -17,7 +18,8 @@ const makeRequest = async function makeRequest(opt) {
       .then(response => {
         resolve(response.data);
       }).catch(err => {
-        console.log(err);
+        // Not the whole err: its config holds the token.
+        console.error('lmservices: request failed:', describeAxiosError(err));
         reject('Promise is rejected');
       })
   })

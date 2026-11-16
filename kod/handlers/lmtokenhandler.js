@@ -1,4 +1,5 @@
 const axios = require('axios').default;
+const describeAxiosError = require('../lib/describeaxioserror');
 
 const tokens = {};
 
@@ -21,7 +22,8 @@ const revokeToken = async function revokeToken(proxyOptions) {
         delete tokens[proxyOptions.id];
         resolve();
       }).catch(err => {
-        console.log(err);
+        // Not the whole err: its config holds the consumer key and secret, and the token.
+        console.error(`Lantmäteriet ${proxyOptions.id}: revoking the token failed:`, describeAxiosError(err));
         reject('Promise is rejected');
       })
   })
@@ -46,7 +48,8 @@ const createToken = async function createToken(proxyOptions) {
           tokenExpires: Math.floor(Date.now() / 1000) + response.data.expires_in - 10
         });
       }).catch(err => {
-        console.log(err);
+        // Not the whole err: its config holds the consumer key and secret.
+        console.error(`Lantmäteriet ${proxyOptions.id}: fetching a token failed:`, describeAxiosError(err));
         reject('Promise is rejected');
       })
   })

@@ -7,32 +7,28 @@
  */
 
 // Dependencies
-const request = require('request');
+const axios = require('axios');
 
 // Export the module, invoke promise where service is requested.
+// Resolves with the response body as text, also for an error status, and rejects only on network
+// errors.
 module.exports = function getToken(url_token, key, secret, scope) {
-    // Request options
-    const options = {
+    return axios({
         url: url_token,
         method: 'POST',
         auth: {
-            user: key,
-            pass: secret
+            username: key,
+            password: secret
         },
-        form: {
+        data: new URLSearchParams({
             'scope': scope,
             'grant_type': 'client_credentials'
-        }
-    }
-    // Return promise to be invoked for authenticating on service requests
-    return new Promise((resolve, reject) => {
-        // Requesting the token service object
-        request(options, (error, response, body) => {
-            if (error) {
-                reject('An error occured collecting token: ', error);
-            } else {
-                resolve(body);
-            }
-        })
+        }),
+        responseType: 'text',
+        validateStatus: () => true
     })
+    .then(({ data }) => data)
+    .catch(() => {
+        throw 'An error occured collecting token: ';
+    });
 }

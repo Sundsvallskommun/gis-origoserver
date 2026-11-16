@@ -1,6 +1,6 @@
 var conf = require('../conf/config');
-var request = require('request');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 const url = require('url');
 const wkt = require('wkt');
@@ -66,17 +66,16 @@ function doGet(req, res, configOptions, srid, output) {
     url: encodeURI(configOptions.url),
     method: 'POST',
     headers: {
-        'User-Agent': 'Request-Promise',
-        'Content-Type': 'text/xml',
-        'Content-Length': Buffer.byteLength(configOptions.query)
+        'Content-Type': 'text/xml'
     },
-    body: configOptions.query,
-    json: false  // Automatically parses the JSON string in the response
+    data: configOptions.query,
+    // The body is parsed below, so that a response that isn't JSON ends up in catch.
+    responseType: 'text'
   }
 
-  rp(options)
-  .then(function (result) {
-    var resultObj = JSON.parse(result);
+  axios(options)
+  .then(function ({ data }) {
+    var resultObj = JSON.parse(data);
     if (output === 'geojson') {
       resultObj.RESPONSE.RESULT.forEach((type) => {
         if (configOptions.type in type) {
@@ -88,21 +87,10 @@ function doGet(req, res, configOptions, srid, output) {
     }
   })
   .catch(function (err) {
-    // Not the whole err: err.options.body is the query with the authenticationkey.
-    console.error(`ERROR doGet! tvapi ${configOptions.name}:`, describeRequestError(err));
+    // Not the whole err: err.config.data is the query with the authenticationkey.
+    console.error(`ERROR doGet! tvapi ${configOptions.name}:`, describeAxiosError(err));
     res.send({});
   });
-}
-
-// A request-promise error as a short string without the request: the status and the start of the
-// response body, or the network error code.
-function describeRequestError(err) {
-  if (err.statusCode) {
-    const body = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
-    return `HTTP ${err.statusCode} ${String(body).slice(0, 500)}`;
-  }
-  const cause = err.cause || err.error;
-  return (cause && (cause.code || cause.message)) || err.message;
 }
 
 function createGeojson(entities, configOptions, srid) {

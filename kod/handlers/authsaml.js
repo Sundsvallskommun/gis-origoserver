@@ -5,8 +5,8 @@ const samlRouter = express.Router();
 const conf = require('../conf/config');
 const saml2 = require('saml2-js');
 const fs = require('fs');
-var request = require('request');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var Bluebird = require('bluebird');
 const url = require('url');
 var proxyUrl = 'authsaml';
@@ -47,13 +47,12 @@ let uri = '';
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
 
 function SAMLRequestWait(options) {
-  return rp(options)
-  .then(function (result) {
+  return axios(options)
+  .then(function ({ data: result }) {
     return result.status;
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR doSearchAsyncCall!');
+    console.error('ERROR doSearchAsyncCall!', describeAxiosError(err));
     return 'Error';
   })
 }
@@ -78,7 +77,7 @@ async function SAMLCreateLoginWait(res) {
     console.log(login_url);
     // res.redirect(login_url);
     const options = {
-        uri: login_url,
+        url: login_url,
         method: 'GET'
     }
     const parsedUrl = url.parse(decodeURI(login_url), true);
