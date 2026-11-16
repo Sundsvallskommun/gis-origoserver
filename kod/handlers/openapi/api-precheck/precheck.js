@@ -1,5 +1,6 @@
 const url = require('url');
-var pointsWithinPolygon = require('@turf/points-within-polygon');
+// @turf 7 exports the function by name, not as the module itself
+const { pointsWithinPolygon } = require('@turf/points-within-polygon');
 const fs = require('fs');
 const proj4 = require('proj4');
 
@@ -57,6 +58,7 @@ function doGet(req, res, northing, easting, category, srid) {
 }
 
 module.exports = {
+  // Answers 400 for the first invalid parameter and stops there, so that only one response is sent.
   get: function (req, res, next) {
     const parsedUrl = url.parse(decodeURI(req.url), true);
     let northing = '';
@@ -67,34 +69,34 @@ module.exports = {
     let msg = '';
     if ('northing' in parsedUrl.query) {
       if (isNaN(parsedUrl.query.northing)) {
-        res.status(400).json( 'Northing is not in valid format');
+        return res.status(400).json( 'Northing is not in valid format');
       } else {
         northing = parsedUrl.query.northing;
       }
     } else {
-      res.status(400).json( 'Missing required parameter northing');
+      return res.status(400).json( 'Missing required parameter northing');
     }
     if ('easting' in parsedUrl.query) {
       if (isNaN(parsedUrl.query.easting)) {
-        res.status(400).json( 'Easting is not in valid format');
+        return res.status(400).json( 'Easting is not in valid format');
       } else {
         easting = parsedUrl.query.easting;
       }
     } else {
-      res.status(400).json( 'Missing required parameter easting');
+      return res.status(400).json( 'Missing required parameter easting');
     }
     if ('category' in parsedUrl.query) {
       if (!['DISTRICT_HEATING'].includes(parsedUrl.query.category)) {
-        res.status(400).json('Category is not a valid value');
+        return res.status(400).json('Category is not a valid value');
       } else {
         category = parsedUrl.query.category;
       }
     } else {
-      res.status(400).json( 'Missing required parameter category');
+      return res.status(400).json( 'Missing required parameter category');
     }
     if ('srid' in parsedUrl.query) {
       if (isNaN(parsedUrl.query.srid)) {
-        res.status(400).json('srid is not a valid value');
+        return res.status(400).json('srid is not a valid value');
       } else {
         srid = parsedUrl.query.srid;
       }
