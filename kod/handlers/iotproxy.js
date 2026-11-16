@@ -1,6 +1,6 @@
 var conf = require('../conf/config');
-var request = require('request');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 const url = require('url');
 
@@ -41,32 +41,19 @@ function doGet(req, res, configOptions, srid) {
   // Setup the search call and wait for result
   const options = {
       url: configOptions.url,
-      method: 'GET',
-      json: true // Automatically parses the JSON string in the response
+      method: 'GET'
   }
 
-  rp(options)
-  .then(function (parsedBody) {
-    res.send(createGeojson(parsedBody, configOptions, srid));
+  axios(options)
+  .then(function ({ data }) {
+    res.send(createGeojson(data, configOptions, srid));
   })
   .catch(function (err) {
-    // Not the whole err: err.options and err.response hold the url, which can contain an API key.
-    console.error(`ERROR doGetFromPointWait! iotproxy ${configOptions.name}:`, describeRequestError(err));
+    // Not the whole err: err.config holds the url, which can contain an API key.
+    console.error(`ERROR doGetFromPointWait! iotproxy ${configOptions.name}:`, describeAxiosError(err));
     res.send({});
   });
 }
-
-// A request-promise error as a short string without the url: the status and the start of the
-// response body, or the network error code.
-function describeRequestError(err) {
-  if (err.statusCode) {
-    const body = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
-    return `HTTP ${err.statusCode} ${String(body).slice(0, 500)}`;
-  }
-  const cause = err.cause || err.error;
-  return (cause && (cause.code || cause.message)) || err.message;
-}
-
 
 function createGeojson(entities, configOptions, srid) {
   const result = {};

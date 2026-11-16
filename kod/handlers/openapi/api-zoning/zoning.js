@@ -1,17 +1,16 @@
 const url = require('url');
-var rp = require('request-promise');
+const axios = require('axios');
 var querystring = require("querystring");
 
 function doGet(req, res, estate) {
   // Setup the search call and wait for result
   const options = {
       url: `http://fme.sundsvall.se/fmedatastreaming/API/KollaDetaljplan.fmw?SourceDataset_ORACLE_SPATIAL_3=GIS%40sbk_orcl&Fastighet=${querystring.escape(estate.toUpperCase())}&token=5e5a19edfd0a6e6b05b11a08ec7c39ccabf93bd2`,
-      method: 'GET',
-      json: true // Automatically parses the JSON string in the response
+      method: 'GET'
   }
 
-  rp(options)
-  .then(function (parsedBody) {
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     if (typeof parsedBody !== 'undefined') {
       let status = false;
       const zoning = [];

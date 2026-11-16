@@ -45,8 +45,6 @@
     "orm": "^8.0.1",
     "proj4": "^2.20.8",
     "query-overpass": "^1.5.5",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
     "saml2-js": "^4.0.4",
     "serve-favicon": "^2.5.1",
     "sqlite3": "^5.1.7",

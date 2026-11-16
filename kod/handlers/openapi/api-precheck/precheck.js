@@ -1,5 +1,4 @@
 const url = require('url');
-var rp = require('request-promise');
 var querystring = require("querystring");
 var pointsWithinPolygon = require('@turf/points-within-polygon');
 const fs = require('fs');

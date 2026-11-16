@@ -1,5 +1,6 @@
 var conf = require('../conf/config');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 var transformCoordinates = require('../lib/utils/transformcoordinates');
 const url = require('url');
 const lmtokenhandler = require('./lmtokenhandler');
@@ -55,8 +56,8 @@ const lmGetEstate = async (req, res, type = 'merged') => {
 module.exports = lmGetEstate;
 
 function doGetWait(req, res, options, type, srid) {
-  rp(options)
-  .then(function (parsedBody) {
+  axios(options)
+  .then(function ({ data: parsedBody }) {
     if (type === 'full') {
       res.send(parsedBody);
     } else {
@@ -64,8 +65,7 @@ function doGetWait(req, res, options, type, srid) {
     }
   })
   .catch(function (err) {
-    console.log(err);
-    console.log('ERROR doGetWait!');
+    console.error('ERROR doGetWait!', describeAxiosError(err));
     res.send({});
   });
 }
@@ -79,8 +79,7 @@ async function doGetAsyncCall(req, res, configOptions, fnr, type, token, scope, 
         'content-type': 'application/json',
         'Authorization': `Bearer ${token}`,
         'scope': `${scope}`
-      },
-      json: true // Automatically parses the JSON string in the response
+      }
   }
 
   await doGetWait(req, res, options, type, srid);

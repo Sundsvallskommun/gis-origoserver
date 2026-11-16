@@ -1,5 +1,6 @@
 var conf = require('../conf/config');
-var rp = require('request-promise');
+const axios = require('axios');
+const describeAxiosError = require('../lib/describeaxioserror');
 const url = require('url');
 var getMunicipality = require('../lib/utils/municipality');
 const { compareRelevance, compareNamesNaturally } = require('../utils/compare');
@@ -105,16 +106,14 @@ async function doSearchAsyncCall(req, res, municipalityArray, urlParams, configO
         }
     }
     promiseArray.push(
-      rp(options)
-      .then(function (result) {
-        var parameters = JSON.parse(result);
+      axios(options)
+      .then(function ({ data: parameters }) {
         var newRes = [];
         newRes = concatResult(parameters.features, municipality, req.query.q);
         return newRes;
       })
       .catch(function (err) {
-        console.log(err);
-        console.log('ERROR doSearchAsyncCall!');
+        console.error('ERROR doSearchAsyncCall!', describeAxiosError(err));
         res.send({});
       })
     )

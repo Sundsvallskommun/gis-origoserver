@@ -17,16 +17,8 @@ module.exports = function proxy(req, res) {
   proxyRequest(req, res, {
     url: url,
     // Only follow redirects that also point to an allowed url
-    followRedirect: function(response) {
-      var location = response.headers.location;
-      if (!location) {
-        return false;
-      }
-      try {
-        return Boolean(toAllowedUrl(new URL(location, response.request.uri.href).href));
-      } catch (e) {
-        return false;
-      }
+    allowRedirect: function(location) {
+      return Boolean(toAllowedUrl(location));
     }
   });
 }

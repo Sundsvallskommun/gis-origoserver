@@ -1,21 +1,11 @@
 const conf = require('../conf/config');
 const axios = require('axios').default;
+const describeAxiosError = require('../lib/describeaxioserror');
 const co = require('co');
 const generate = require('node-chartist');
 const url = require('url');
 
 var proxyUrl = 'iotTemp';
-
-// An axios error as a short string. Not the whole error: error.config holds the url and params,
-// i.e. the API key.
-function describeAxiosError(error) {
-  if (error.response) {
-    const data = error.response.data;
-    const body = typeof data === 'string' ? data : JSON.stringify(data);
-    return `HTTP ${error.response.status} ${String(body).slice(0, 500)}`;
-  }
-  return error.code || error.message;
-}
 
 async function getTempSensors(url, apikey) {
   var sensors = [];

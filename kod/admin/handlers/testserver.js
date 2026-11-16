@@ -1,7 +1,7 @@
 // var express = require('express');
 // var path = require('path');
 // var bodyParser = require('body-parser');
-var rp = require('request-promise');
+const axios = require('axios');
 var xml2js = require('xml2js');
 var _ = require('lodash');
 
@@ -81,7 +81,8 @@ const getCapabilities = function (url, service, version) {
         url: fixedUrl
     };
     console.log(fixedUrl);
-    return rp(options);
+    // The XML as text, which is parsed with xml2js
+    return axios({ ...options, responseType: 'text' }).then(({ data }) => data);
 }
 let c = 0;
 const describeFeatureType = function (layer, url) {
@@ -104,7 +105,8 @@ const describeFeatureType = function (layer, url) {
         method: 'GET',
         url: fixedUrl
     };
-    return rp(options);
+    // The XML as text, which is parsed with xml2js
+    return axios({ ...options, responseType: 'text' }).then(({ data }) => data);
 }
 
 // module.exports = app;
