@@ -6,6 +6,17 @@ const url = require('url');
 
 var proxyUrl = 'iotTemp';
 
+// An axios error as a short string. Not the whole error: error.config holds the url and params,
+// i.e. the API key.
+function describeAxiosError(error) {
+  if (error.response) {
+    const data = error.response.data;
+    const body = typeof data === 'string' ? data : JSON.stringify(data);
+    return `HTTP ${error.response.status} ${String(body).slice(0, 500)}`;
+  }
+  return error.code || error.message;
+}
+
 async function getTempSensors(url, apikey) {
   var sensors = [];
   var requestOptions = {
@@ -20,7 +31,7 @@ async function getTempSensors(url, apikey) {
         });
 
       })
-      .catch(error => console.log('error', error));
+      .catch(error => console.error('iottemp: fetching sensors failed:', describeAxiosError(error)));
 
   return sensors;
 }
@@ -37,7 +48,7 @@ async function getTemps(sensors, url, apikey) {
   await axios
     .all(axiosArray)
     .then(console.log('Get all temperatures from sensors!'))
-    .catch(error => console.log('error', error));
+    .catch(error => console.error('iottemp: fetching temperatures failed:', describeAxiosError(error)));
 
   return temperatures;
 }
@@ -46,9 +57,20 @@ async function getTemp(sensorId, url, apikey) {
   let temperature = [];
 
   await axios.get(url, { params: {sensor: sensorId, apikey: apikey} })
-            .then(response => { temperature = response.data.sensors[0] });
+            .then(response => { temperature = response.data.sensors[0] })
+            .catch(error => {
+              // A new error with a readable message, so that the axios error, whose config holds
+              // the API key, never reaches the error handlers.
+              throw new Error(`iottemp: fetching temperature for ${sensorId} failed: ${describeAxiosError(error)}`);
+            });
 
   return temperature;
+}
+
+// The chart's series name ends up as an attribute in the SVG, which is put straight into the page
+// and into the GeoJSON. The name is never shown, so only harmless characters are kept.
+function seriesName(id) {
+  return String(id).replace(/[^\w:.-]/g, '_');
 }
 
 async function createChart(sensorData) {
@@ -78,7 +100,7 @@ async function createChart(sensorData) {
   const line = generate('line', options, {
     labels: labels,
     series: [
-      {name: sensorData.id, value: values}
+      {name: seriesName(sensorData.id), value: values}
     ]
   });
   returnPromises.push(line);
@@ -98,9 +120,15 @@ const iotTemp = async (req, res) => {
 
     const parsedUrl = url.parse(decodeURI(req.url), true);
     if ('id' in parsedUrl.query) {
-      id = parsedUrl.query.id;
+      // const, not a global: concurrent requests would otherwise overwrite each other's id.
+      const id = parsedUrl.query.id;
       // Get all sensors from api.sundsvall.se
       const sensors = await getTempSensors(url_sensors, apikey);
+      // Only known sensors. id ends up in the page, so this stops arbitrary input from getting there.
+      if (typeof id !== 'string' || !sensors.some((sensor) => sensor.id === id)) {
+        res.status(404).send('Unknown sensor');
+        return;
+      }
       const temperature = await getTemp(id, url_temp_sensor, apikey);
       // Create line chart of temperature the last 24 hours for sensor
       const charts = await createChart(temperature);
@@ -158,7 +186,7 @@ async function createCharts(temperatures) {
     const line = generate('line', options, {
       labels: labels,
       series: [
-        {name: temperature.id, value: values}
+        {name: seriesName(temperature.id), value: values}
       ]
     });
     returnPromises.push(line);
@@ -204,6 +232,24 @@ function createGeojson(sensors, temperatures, charts, configOptions) {
   return result;
 }
 
+// A value as a JavaScript literal that is safe inside <script>: JSON with "<" escaped so that it
+// cannot close the script tag, plus the two line separators JSON allows but older JS does not.
+function scriptLiteral(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function createHtml(sensorId, sensors, temperature, chart, configOptions) {
   const firstTime = new Intl.DateTimeFormat('locale', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).format(Date.parse(temperature.values[0].when));
   const lastTime = new Intl.DateTimeFormat('locale', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).format(Date.parse(temperature.values[temperature.values.length - 1].when));
@@ -237,16 +283,24 @@ iframe {
 
 </head>
 <body>
-<h1>Temperatur mellan ${firstTime} och ${lastTime}</h1>
+<h1>Temperatur mellan ${escapeHtml(firstTime)} och ${escapeHtml(lastTime)}</h1>
 ${chart}
 <script>
+  // All values from the request and the API go in as JSON, never straight into the code.
+  var marker = ${scriptLiteral({
+    coordinates: coordinates,
+    projection: configOptions.destEPSGCode,
+    // Origo may show the marker's title and content as HTML.
+    title: escapeHtml(sensorId),
+    content: `${escapeHtml(lastTemp)} &deg; C vid ${escapeHtml(lastTime)}`
+  })};
   function onMapFrameLoad() {
-    setTimeout(function(){ map.origo.api().addMarker(map.origo.api().getMapUtils().transformCoordinate([${coordinates}],'EPSG:4326','${configOptions.destEPSGCode}'),'${sensorId}','${lastTemp} &deg; C vid ${lastTime}'); }, 1000);
+    setTimeout(function(){ map.origo.api().addMarker(map.origo.api().getMapUtils().transformCoordinate(marker.coordinates,'EPSG:4326',marker.projection),marker.title,marker.content); }, 1000);
 	};
 </script>
 <iframe id="map" name="map" class="map-container" onload="onMapFrameLoad(this)"></iframe>
 <script>
-  map.location.href = '${configOptions.url_detail_map}';
+  map.location.href = ${scriptLiteral(configOptions.url_detail_map)};
 </script>
 </body>
 </html>`;
