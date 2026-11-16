@@ -4,9 +4,13 @@ const { pointsWithinPolygon } = require('@turf/points-within-polygon');
 const fs = require('fs');
 const proj4 = require('proj4');
 
+// The coordinate systems that the coordinates can be given in. They are converted to 3006, the
+// system of the area file.
+const SUPPORTED_SRIDS = [3006, 3014, 3857, 4326];
+
 function doGet(req, res, northing, easting, category, srid) {
   const searchWithin = JSON.parse( fs.readFileSync('fjv_buffer20.json', 'utf8') );
-  const crs = `EPSG:${srid}`;
+  const crs = 'EPSG:3006';
   let coord = [Number(easting), Number(northing)];
 
   var projection3006 = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
@@ -64,7 +68,7 @@ module.exports = {
     let northing = '';
     let easting = '';
     let category = '';
-    let srid = '3006';
+    let srid = 3006;
     let status = 200;
     let msg = '';
     if ('northing' in parsedUrl.query) {
@@ -95,13 +99,13 @@ module.exports = {
       return res.status(400).json( 'Missing required parameter category');
     }
     if ('srid' in parsedUrl.query) {
-      if (isNaN(parsedUrl.query.srid)) {
+      // srid arrives as text but is compared with numbers in doGet
+      srid = Number(parsedUrl.query.srid);
+      if (!SUPPORTED_SRIDS.includes(srid)) {
         return res.status(400).json('srid is not a valid value');
-      } else {
-        srid = parsedUrl.query.srid;
       }
     } else {
-      srid = '3006';
+      srid = 3006;
     }
     doGet(req, res, northing, easting, category, srid);
   },
@@ -135,7 +139,7 @@ module.exports.get.apiDoc = {
     {
       in: 'query',
       name: 'srid',
-      description: 'The coordinate reference system id of given coordinates, default 3006',
+      description: 'The coordinate reference system id of given coordinates: 3006, 3014, 3857 or 4326. Default 3006',
       required: false,
       type: 'string'
     }
