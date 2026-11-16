@@ -1,16 +1,9 @@
 const url = require('url');
-var querystring = require("querystring");
 var pointsWithinPolygon = require('@turf/points-within-polygon');
 const fs = require('fs');
 const proj4 = require('proj4');
 
 function doGet(req, res, northing, easting, category, srid) {
-  // Setup the search call and wait for result
-  const options = {
-      url: `http://fme.sundsvall.se/fmedatastreaming/API/KollaFjarrvarme.fmw?SourceDataset_ORACLE_SPATIAL_3=GIS%40sbk_orcl&Coordinates=[${querystring.escape(easting.toUpperCase())},${querystring.escape(northing.toUpperCase())}]&token=5e5a19edfd0a6e6b05b11a08ec7c39ccabf93bd2`,
-      method: 'GET',
-      json: true // Automatically parses the JSON string in the response
-  }
   const searchWithin = JSON.parse( fs.readFileSync('fjv_buffer20.json', 'utf8') );
   const crs = `EPSG:${srid}`;
   let coord = [Number(easting), Number(northing)];
