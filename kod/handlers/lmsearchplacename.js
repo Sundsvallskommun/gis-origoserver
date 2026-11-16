@@ -33,7 +33,7 @@ const lmSearchPlacename = async (req, res) => {
       var municipalityArray = kommunkod.split(',');
       if (municipalityArray.length > 0) {
         var lmuser = parsedUrl.query.lmuser;
-        var q = parsedUrl.query.q;
+        var q = parsedUrl.query.q || '';
         var page = parsedUrl.query.page;
         var start = parsedUrl.query.start;
         var limit = parsedUrl.query.limit;
@@ -89,11 +89,10 @@ const lmSearchPlacename = async (req, res) => {
 // Export the module
 module.exports = lmSearchPlacename;
 
+// One search per municipality. A search that fails is logged and gives no hits, so that the others
+// are still returned. The response is sent once, when all searches are done.
 async function doSearchAsyncCall(req, res, municipalityArray, urlParams, configOptions, token, scope) {
-  var returnValue = [];
-  var promiseArray = [];
-  // Split all the separate municipality given to individual searches
-  municipalityArray.forEach(function(municipality) {
+  const searches = municipalityArray.map(function(municipality) {
     const searchUrl = municipality ? encodeURI(configOptions.url + urlParams + '&kommunkod=' + municipality) : encodeURI(configOptions.url + urlParams);
     // Setup the search call and wait for result
     const options = {
@@ -105,37 +104,18 @@ async function doSearchAsyncCall(req, res, municipalityArray, urlParams, configO
           'scope': `${scope}`
         }
     }
-    promiseArray.push(
-      axios(options)
+    return axios(options)
       .then(function ({ data: parameters }) {
-        var newRes = [];
-        newRes = concatResult(parameters.features, municipality, req.query.q);
-        return newRes;
+        return concatResult(parameters.features, municipality, req.query.q);
       })
       .catch(function (err) {
-        console.error('ERROR doSearchAsyncCall!', describeAxiosError(err));
-        res.send({});
-      })
-    )
+        console.error(`ERROR doSearchAsyncCall! lmsearchplacename ${municipality}:`, describeAxiosError(err));
+        return [];
+      });
   });
 
-  await Promise.all(promiseArray)
-    .then(function (resArr) {
-        // Save the response to be handled in finally
-        returnValue = resArr;
-    })
-    .catch(function (err) {
-        // If fail return empty array
-        res.send([]);
-    })
-    .finally(function () {
-        // When all search has finished concat them to a single array of object Ids
-        var newArray = [];
-        returnValue.forEach(function(search) {
-          newArray = newArray.concat(search);
-        });
-        res.send(newArray);
-    });
+  const results = await Promise.all(searches);
+  res.send([].concat(...results));
 }
 
 function concatResult(placenames, municipality, searchString) {
