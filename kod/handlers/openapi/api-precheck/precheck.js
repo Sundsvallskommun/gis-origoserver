@@ -8,8 +8,21 @@ const proj4 = require('proj4');
 // system of the area file.
 const SUPPORTED_SRIDS = [3006, 3014, 3857, 4326];
 
+// The area file (GeoJSON in 3006) holds sensitive information, so it is not in the repo or the
+// image but mounted into the container. PRECHECK_AREA_FILE gives its path, default
+// fjv_buffer20.json in the server root. It is read on every request, so it can be replaced
+// without a restart.
+const areaFile = () => process.env.PRECHECK_AREA_FILE || 'fjv_buffer20.json';
+
 function doGet(req, res, northing, easting, category, srid) {
-  const searchWithin = JSON.parse( fs.readFileSync('fjv_buffer20.json', 'utf8') );
+  let searchWithin;
+  try {
+    searchWithin = JSON.parse(fs.readFileSync(areaFile(), 'utf8'));
+  } catch (err) {
+    // ENOENT when the file is not mounted, SyntaxError when it is not JSON
+    console.error('precheck: the area file %s could not be read: %s', areaFile(), err.code || err.message);
+    return res.status(503).json('The precheck is not configured (area file)');
+  }
   const crs = 'EPSG:3006';
   let coord = [Number(easting), Number(northing)];
 
@@ -188,6 +201,12 @@ module.exports.get.apiDoc = {
       description: 'Bad request',
       schema: {
         type: "string"
+      },
+    },
+    503: {
+      description: 'The area file is missing or can not be read (PRECHECK_AREA_FILE)',
+      schema: {
+        type: 'string',
       },
     },
     500: {
