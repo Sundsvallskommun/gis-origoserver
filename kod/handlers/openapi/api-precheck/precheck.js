@@ -1,18 +1,29 @@
 const url = require('url');
-var querystring = require("querystring");
-var pointsWithinPolygon = require('@turf/points-within-polygon');
+// @turf 7 exports the function by name, not as the module itself
+const { pointsWithinPolygon } = require('@turf/points-within-polygon');
 const fs = require('fs');
 const proj4 = require('proj4');
 
+// The coordinate systems that the coordinates can be given in. They are converted to 3006, the
+// system of the area file.
+const SUPPORTED_SRIDS = [3006, 3014, 3857, 4326];
+
+// The area file (GeoJSON in 3006) holds sensitive information, so it is not in the repo or the
+// image but mounted into the container. PRECHECK_AREA_FILE gives its path, default
+// fjv_buffer20.json in the server root. It is read on every request, so it can be replaced
+// without a restart.
+const areaFile = () => process.env.PRECHECK_AREA_FILE || 'fjv_buffer20.json';
+
 function doGet(req, res, northing, easting, category, srid) {
-  // Setup the search call and wait for result
-  const options = {
-      url: `http://fme.sundsvall.se/fmedatastreaming/API/KollaFjarrvarme.fmw?SourceDataset_ORACLE_SPATIAL_3=GIS%40sbk_orcl&Coordinates=[${querystring.escape(easting.toUpperCase())},${querystring.escape(northing.toUpperCase())}]&token=5e5a19edfd0a6e6b05b11a08ec7c39ccabf93bd2`,
-      method: 'GET',
-      json: true // Automatically parses the JSON string in the response
+  let searchWithin;
+  try {
+    searchWithin = JSON.parse(fs.readFileSync(areaFile(), 'utf8'));
+  } catch (err) {
+    // ENOENT when the file is not mounted, SyntaxError when it is not JSON
+    console.error('precheck: the area file %s could not be read: %s', areaFile(), err.code || err.message);
+    return res.status(503).json('The precheck is not configured (area file)');
   }
-  const searchWithin = JSON.parse( fs.readFileSync('fjv_buffer20.json', 'utf8') );
-  const crs = `EPSG:${srid}`;
+  const crs = 'EPSG:3006';
   let coord = [Number(easting), Number(northing)];
 
   var projection3006 = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
@@ -64,49 +75,50 @@ function doGet(req, res, northing, easting, category, srid) {
 }
 
 module.exports = {
+  // Answers 400 for the first invalid parameter and stops there, so that only one response is sent.
   get: function (req, res, next) {
     const parsedUrl = url.parse(decodeURI(req.url), true);
     let northing = '';
     let easting = '';
     let category = '';
-    let srid = '3006';
+    let srid = 3006;
     let status = 200;
     let msg = '';
     if ('northing' in parsedUrl.query) {
       if (isNaN(parsedUrl.query.northing)) {
-        res.status(400).json( 'Northing is not in valid format');
+        return res.status(400).json( 'Northing is not in valid format');
       } else {
         northing = parsedUrl.query.northing;
       }
     } else {
-      res.status(400).json( 'Missing required parameter northing');
+      return res.status(400).json( 'Missing required parameter northing');
     }
     if ('easting' in parsedUrl.query) {
       if (isNaN(parsedUrl.query.easting)) {
-        res.status(400).json( 'Easting is not in valid format');
+        return res.status(400).json( 'Easting is not in valid format');
       } else {
         easting = parsedUrl.query.easting;
       }
     } else {
-      res.status(400).json( 'Missing required parameter easting');
+      return res.status(400).json( 'Missing required parameter easting');
     }
     if ('category' in parsedUrl.query) {
       if (!['DISTRICT_HEATING'].includes(parsedUrl.query.category)) {
-        res.status(400).json('Category is not a valid value');
+        return res.status(400).json('Category is not a valid value');
       } else {
         category = parsedUrl.query.category;
       }
     } else {
-      res.status(400).json( 'Missing required parameter category');
+      return res.status(400).json( 'Missing required parameter category');
     }
     if ('srid' in parsedUrl.query) {
-      if (isNaN(parsedUrl.query.srid)) {
-        res.status(400).json('srid is not a valid value');
-      } else {
-        srid = parsedUrl.query.srid;
+      // srid arrives as text but is compared with numbers in doGet
+      srid = Number(parsedUrl.query.srid);
+      if (!SUPPORTED_SRIDS.includes(srid)) {
+        return res.status(400).json('srid is not a valid value');
       }
     } else {
-      srid = '3006';
+      srid = 3006;
     }
     doGet(req, res, northing, easting, category, srid);
   },
@@ -140,7 +152,7 @@ module.exports.get.apiDoc = {
     {
       in: 'query',
       name: 'srid',
-      description: 'The coordinate reference system id of given coordinates, default 3006',
+      description: 'The coordinate reference system id of given coordinates: 3006, 3014, 3857 or 4326. Default 3006',
       required: false,
       type: 'string'
     }
@@ -189,6 +201,12 @@ module.exports.get.apiDoc = {
       description: 'Bad request',
       schema: {
         type: "string"
+      },
+    },
+    503: {
+      description: 'The area file is missing or can not be read (PRECHECK_AREA_FILE)',
+      schema: {
+        type: 'string',
       },
     },
     500: {

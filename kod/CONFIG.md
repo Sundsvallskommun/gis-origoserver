@@ -218,3 +218,7 @@ Create the tables with sql/dialogkarta/schema.sql. The SRID in the schema must b
 		  max_attachment_mb: 25,
 		  validate_responses: 'warn'
 		}
+
+- Precheck - checks whether a point is within the area for a service, at /origoserver/api/v1/precheck?northing=&easting=&category=DISTRICT_HEATING&srid=
+
+Reads the area (GeoJSON polygons in EPSG:3006) from the file in the environment variable PRECHECK_AREA_FILE, default fjv_buffer20.json in the server root. The file holds sensitive information and is not in the repo or the image; mount it into the container, f.e. a folder at /precheck and PRECHECK_AREA_FILE=/precheck/fjv_buffer20.json. Without a readable file the precheck answers 503. The file is read on every request, so it can be replaced without a restart.

@@ -4,3 +4,6 @@ node_modules
 
 # Dialogkarta, fillagring (storage: "file")
 /dialogkarta-data/
+
+# Områdesfilen till precheck, känslig och monteras i containern
+/fjv_buffer20.json
