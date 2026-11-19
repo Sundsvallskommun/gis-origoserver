@@ -1,8 +1,10 @@
-const url = require('url');
 // @turf 7 exports the function by name, not as the module itself
 const { pointsWithinPolygon } = require('@turf/points-within-polygon');
 const fs = require('fs');
 const proj4 = require('proj4');
+
+// True for a non-empty string that parses as a number (rejects '', '  ' and repeated params)
+const isNumeric = (v) => typeof v === 'string' && v.trim() !== '' && !isNaN(v);
 
 // The coordinate systems that the coordinates can be given in. They are converted to 3006, the
 // system of the area file.
@@ -77,43 +79,43 @@ function doGet(req, res, northing, easting, category, srid) {
 module.exports = {
   // Answers 400 for the first invalid parameter and stops there, so that only one response is sent.
   get: function (req, res, next) {
-    const parsedUrl = url.parse(decodeURI(req.url), true);
+    const query = req.query;
     let northing = '';
     let easting = '';
     let category = '';
     let srid = 3006;
     let status = 200;
     let msg = '';
-    if ('northing' in parsedUrl.query) {
-      if (isNaN(parsedUrl.query.northing)) {
+    if ('northing' in query) {
+      if (!isNumeric(query.northing)) {
         return res.status(400).json( 'Northing is not in valid format');
       } else {
-        northing = parsedUrl.query.northing;
+        northing = query.northing;
       }
     } else {
       return res.status(400).json( 'Missing required parameter northing');
     }
-    if ('easting' in parsedUrl.query) {
-      if (isNaN(parsedUrl.query.easting)) {
+    if ('easting' in query) {
+      if (!isNumeric(query.easting)) {
         return res.status(400).json( 'Easting is not in valid format');
       } else {
-        easting = parsedUrl.query.easting;
+        easting = query.easting;
       }
     } else {
       return res.status(400).json( 'Missing required parameter easting');
     }
-    if ('category' in parsedUrl.query) {
-      if (!['DISTRICT_HEATING'].includes(parsedUrl.query.category)) {
+    if ('category' in query) {
+      if (!['DISTRICT_HEATING'].includes(query.category)) {
         return res.status(400).json('Category is not a valid value');
       } else {
-        category = parsedUrl.query.category;
+        category = query.category;
       }
     } else {
       return res.status(400).json( 'Missing required parameter category');
     }
-    if ('srid' in parsedUrl.query) {
+    if ('srid' in query) {
       // srid arrives as text but is compared with numbers in doGet
-      srid = Number(parsedUrl.query.srid);
+      srid = Number(query.srid);
       if (!SUPPORTED_SRIDS.includes(srid)) {
         return res.status(400).json('srid is not a valid value');
       }
