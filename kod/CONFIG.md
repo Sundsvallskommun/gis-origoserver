@@ -48,17 +48,23 @@ If you have data from IoT sensors in NGSI-LD standard and want to read it direct
 
 - Overpass - get data from OpenStreetMap through the Overpass API.
 
-A typical query can be to get all nodes tagged with some key within a area limited by a bounding box. Test your queries in [overpass turbo](https://overpass-turbo.eu/) Read more about [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) Uses the module [query-overpass](https://github.com/perliedman/query-overpass)
+A typical query can be to get all nodes tagged with some key within a area limited by a bounding box. Test your queries in [overpass turbo](https://overpass-turbo.eu/) Read more about [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API). The answer is turned into GeoJSON in the same format as [osmtogeojson](https://github.com/tyrasd/osmtogeojson): nodes become points and ways lines or polygons. Multipolygon and boundary relations do not become polygons; their ways come out as separate features.
+
+		url - optional, the Overpass API to use. Default https://overpass-api.de/api/interpreter
+
+		user_agent - optional, the User-Agent sent to Overpass. Default origoserver. overpass-api.de refuses requests without a User-Agent of their own.
+
+		timeout_ms - optional, how long to wait for Overpass. Default 120000
 
 		queries - an array which holds one or more query objects that retrieves data from OpenStreetMap.
 
 		name - a unique name for the query which is used to call on it from the front end.
 
-		query - a overpass query which is passed to the API. Test the query in overpass turbo and make sure it's on a single row in the config. Limited support for complex queries.
+		query - a overpass query which is passed to the API. Test the query in overpass turbo and make sure it's on a single row in the config. The query must ask for JSON with [out:json], and the shortcuts of overpass turbo such as {{geocodeArea:...}} do not work in the API.
 
 		title - the title that is used as name in the GeoJSON FeatureCollection.
 
-		options - optional options to be set which currently is overpassUrl and flatProperties
+		options - optional, a JSON string or an object with overpassUrl (the Overpass API for this query) and flatProperties (tags and meta information directly in properties, with id as type/id)
 
 - Trafikverket API - get data from Trafikverket API.
 
