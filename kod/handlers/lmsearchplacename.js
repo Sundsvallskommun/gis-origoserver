@@ -51,7 +51,11 @@ const lmSearchPlacename = async (req, res) => {
         } else {
           matchtype = 'contains';
         }
-        var searchUrl = '/kriterier?';
+        // The free text search is much faster than the criteria search, but it ignores language and
+        // name type and returns only id and name. The criteria search is therefore used only when
+        // language or name type is given, otherwise the free text search plus a lookup by id.
+        const useFreeText = !lang && !nametype;
+        var searchUrl = useFreeText ? '/referens/fritext?' : '/kriterier?';
 
         if ( q.length > 0 ) {
           searchUrl = searchUrl + 'namn=' + q + '&match=' + matchtype;
@@ -68,9 +72,11 @@ const lmSearchPlacename = async (req, res) => {
         if ( limit ) {
           searchUrl = searchUrl + '&maxHits=' + limit;
         }
-        searchUrl = searchUrl + '&srid=' + srid;
+        if ( !useFreeText ) {
+          searchUrl = searchUrl + '&srid=' + srid;
+        }
         if ( q.length > 0 ) {
-          doSearchAsyncCall(req, res, municipalityArray, searchUrl, configOptions, token, scope);
+          doSearchAsyncCall(req, res, municipalityArray, searchUrl, useFreeText ? srid : null, configOptions, token, scope);
         } else {
           console.log('No searchstring, skip!');
           res.send({});
@@ -91,21 +97,35 @@ module.exports = lmSearchPlacename;
 
 // One search per municipality. A search that fails is logged and gives no hits, so that the others
 // are still returned. The response is sent once, when all searches are done.
-async function doSearchAsyncCall(req, res, municipalityArray, urlParams, configOptions, token, scope) {
+// freeTextSrid is set when urlParams is a free text search: its references are then looked up by id
+// in that srid, which gives the same features as the criteria search.
+async function doSearchAsyncCall(req, res, municipalityArray, urlParams, freeTextSrid, configOptions, token, scope) {
+  const headers = {
+    'content-type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'scope': `${scope}`
+  };
   const searches = municipalityArray.map(function(municipality) {
     const searchUrl = municipality ? encodeURI(configOptions.url + urlParams + '&kommunkod=' + municipality) : encodeURI(configOptions.url + urlParams);
     // Setup the search call and wait for result
     const options = {
         url: searchUrl,
         method: 'GET',
-        headers: {
-          'content-type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'scope': `${scope}`
-        }
+        headers
     }
     return axios(options)
-      .then(function ({ data: parameters }) {
+      .then(function ({ data }) {
+        if (!freeTextSrid) return data;
+        const ids = Array.isArray(data) ? data.map((reference) => reference.id) : [];
+        if (ids.length === 0) return {};
+        return axios({
+          url: configOptions.url + '/?srid=' + encodeURIComponent(freeTextSrid),
+          method: 'POST',
+          headers,
+          data: ids
+        }).then((response) => response.data);
+      })
+      .then(function (parameters) {
         return concatResult(parameters.features, municipality, req.query.q);
       })
       .catch(function (err) {
