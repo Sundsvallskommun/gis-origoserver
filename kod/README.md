@@ -34,12 +34,18 @@ The tests use Node's built-in test runner (`node --test`), so no extra test pack
       npm run test:attachment
       npm run test:auth
       npm run test:dialogkarta
+      npm run test:lmsearchplacename
+      npm run test:overpass
 
 - test:attachment - the optional login for changing attachments (`handlers/attachment/requireWrite.js`): off by default, the Origin check, `allowed_origins` and the user from the session.
 
 - test:auth - `requireAdGroupMember` (`handlers/auth`) with one or more AD groups, the cached group list when AD fails, and where the user comes from. Also that `openidIssuer` drops the cached OpenID client after network errors, so the next request does discovery again.
 
 - test:dialogkarta - how dialogkarta is wired into origoserver (config, storage, login and user). The dialog API itself is tested in the dialog-karta repository.
+
+- test:lmsearchplacename - the place name search (`handlers/lmsearchplacename.js`) against a fake Ortnamn Direkt on localhost: the free text search followed by the lookup by id, the criteria search when language or name type is given, several municipalities, and failing calls at Lantmäteriet.
+
+- test:overpass - the conversion of Overpass answers to GeoJSON (`lib/osmtogeojson.js`), checked against what osmtogeojson gave, and the overpass handler against a fake Overpass API on localhost: the User-Agent, options per query and failing calls.
 
 Config, tokens and AD are replaced in the tests, so they need neither a login service, AD nor a `conf/config.js`. New tests go in a `test` folder next to the handler, named `*.test.js`, with a matching `test:<name>` script in package.json.
 

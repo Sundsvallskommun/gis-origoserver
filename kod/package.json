@@ -13,7 +13,8 @@
     "test:attachment": "node --test handlers/attachment/test/*.test.js",
     "test:auth": "node --test handlers/auth/test/*.test.js",
     "test:dialogkarta": "node --test handlers/dialogkarta/test/*.test.js",
-    "test:lmsearchplacename": "node --test handlers/test/lmsearchplacename.test.js"
+    "test:lmsearchplacename": "node --test handlers/test/lmsearchplacename.test.js",
+    "test:overpass": "node --test lib/test/osmtogeojson.test.js handlers/test/overpass.test.js"
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
@@ -45,7 +46,6 @@
     "openid-client": "^5.7.1",
     "orm": "^8.0.1",
     "proj4": "^2.20.8",
-    "query-overpass": "^1.5.5",
     "saml2-js": "^4.0.4",
     "serve-favicon": "^2.5.1",
     "sqlite3": "^6.0.1",
