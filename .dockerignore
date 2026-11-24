@@ -1,2 +1,4 @@
 # Områdesfilen till precheck är känslig och monteras i containern
 kod/fjv_buffer20.json
+# Installeras i imagen, så att binärerna byggs för dess Debian och inte för värden
+kod/node_modules

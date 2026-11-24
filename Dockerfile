@@ -12,7 +12,9 @@ RUN mkdir /OrigoServer
 WORKDIR /OrigoServer
 COPY ./kod/ ./
 COPY /srv/shared/docker/config/config.js ./conf/config.js
-RUN npm install
+# sqlite3 kompileras här, eftersom den färdiga binären för sqlite3 6 kräver glibc 2.38
+# och bookworm har 2.36.
+RUN npm install --build-from-source=sqlite3
 RUN mkdir /db
 ENTRYPOINT npm start
 EXPOSE 3001
