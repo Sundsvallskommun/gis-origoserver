@@ -27,18 +27,6 @@ The server will be available at <http://localhost:3001/origoserver>.
 
 The database dependencies in Origo server are optional and if any of the modules fails to install it will be skipped. Currently Origo server supports MS SQL Server, Oracle and PostgreSQL.
 
-### Install Origo server as a Windows service
-
-Origo can be installed as a Windows service. Run the following command from tasks:
-
-node create_windowsservice.js
-
-Make sure the paths specified in create_windowsservice.js are correct.
-
-To uninstall run the following command:
-
-node uninstall_windowsservice.js
-
 ### Run the tests
 
 The tests use Node's built-in test runner (`node --test`), so no extra test packages are needed. Run them from the `kod` folder after `npm install`:
