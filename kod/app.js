@@ -165,7 +165,7 @@ var server = app.listen(3001, function () {
   console.log('Origo server listening at http://%s:%s', host, port)
 });
 
-//Workaround to set __dirname properly when using node-windows
+// Relative paths (views, config) resolve from the kod folder, wherever the server is started from
 process.chdir(__dirname);
 
 var handlebars = require('express-handlebars')

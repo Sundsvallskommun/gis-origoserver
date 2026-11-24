@@ -61,7 +61,6 @@
   "optionalDependencies": {
     "mssql": "^12.5.4",
     "mysql": "^2.18.1",
-    "node-windows": "^0.1.14",
     "oracledb": "^6.10.0",
     "pg": "^8.21.0",
     "pg-promise": "^12.6.2"
